@@ -1,0 +1,55 @@
+{
+  "versao_formato": 1,
+  "titulo": "Verificação e validação de software",
+  "descricao": "Questão: explique a diferença entre verificação e validação de software e dê um exemplo de cada uma. Rubrica analítica com dois critérios objetivos e dois interpretativos.",
+  "criterios": [
+    {
+      "nome": "Conceituação",
+      "descricao": "Define corretamente verificação e validação.",
+      "peso": "1.00",
+      "tipo": "OBJETIVO",
+      "niveis": [
+        {"rotulo": "Insuficiente", "pontuacao": "0.00", "descritor": "Não define os conceitos ou os define de forma errada."},
+        {"rotulo": "Parcial", "pontuacao": "1.00", "descritor": "Define só um dos conceitos corretamente."},
+        {"rotulo": "Adequado", "pontuacao": "2.00", "descritor": "Define os dois conceitos corretamente, com imprecisões menores."},
+        {"rotulo": "Excelente", "pontuacao": "3.00", "descritor": "Define os dois conceitos com precisão (construir certo o produto × construir o produto certo)."}
+      ]
+    },
+    {
+      "nome": "Distinção",
+      "descricao": "Deixa clara a diferença entre as duas atividades.",
+      "peso": "1.00",
+      "tipo": "OBJETIVO",
+      "niveis": [
+        {"rotulo": "Insuficiente", "pontuacao": "0.00", "descritor": "Trata as duas atividades como a mesma coisa."},
+        {"rotulo": "Parcial", "pontuacao": "1.00", "descritor": "Aponta diferença vaga ou parcialmente correta."},
+        {"rotulo": "Adequado", "pontuacao": "2.00", "descritor": "Distingue as atividades pelo objetivo."},
+        {"rotulo": "Excelente", "pontuacao": "3.00", "descritor": "Distingue pelo objetivo e pela referência usada (especificação × necessidade do usuário)."}
+      ]
+    },
+    {
+      "nome": "Exemplificação",
+      "descricao": "Apresenta exemplos pertinentes de cada atividade.",
+      "peso": "1.00",
+      "tipo": "INTERPRETATIVO",
+      "niveis": [
+        {"rotulo": "Insuficiente", "pontuacao": "0.00", "descritor": "Não apresenta exemplos ou os exemplos não correspondem aos conceitos."},
+        {"rotulo": "Parcial", "pontuacao": "1.00", "descritor": "Exemplo para só um dos conceitos, ou exemplos genéricos sem relação clara."},
+        {"rotulo": "Adequado", "pontuacao": "2.00", "descritor": "Exemplos para os dois conceitos, ao menos um superficial ou parcialmente correto."},
+        {"rotulo": "Excelente", "pontuacao": "3.00", "descritor": "Exemplos corretos, específicos e bem relacionados a cada conceito."}
+      ]
+    },
+    {
+      "nome": "Clareza",
+      "descricao": "Organização e clareza da redação.",
+      "peso": "1.00",
+      "tipo": "INTERPRETATIVO",
+      "niveis": [
+        {"rotulo": "Insuficiente", "pontuacao": "0.00", "descritor": "Texto confuso, difícil de acompanhar."},
+        {"rotulo": "Parcial", "pontuacao": "1.00", "descritor": "Ideias compreensíveis, com desorganização evidente."},
+        {"rotulo": "Adequado", "pontuacao": "2.00", "descritor": "Texto organizado, com pequenos problemas de clareza."},
+        {"rotulo": "Excelente", "pontuacao": "3.00", "descritor": "Texto claro, conciso e bem estruturado."}
+      ]
+    }
+  ]
+}

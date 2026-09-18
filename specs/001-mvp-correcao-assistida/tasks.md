@@ -411,9 +411,9 @@ para copiar e adaptar: `~/Projetos/extenda/`.
 
 **Independent Test**: exportar, importar com outro usuário e comparar critérios, níveis e descritores (quickstart V9)
 
-- [ ] T082 [P] [US6] Escrever `backend/tests/unit/test_modelo_rubrica.py`: a volta completa (exportar e importar) preserva critérios, níveis, descritores, pesos e tipos; o arquivo não contém `dono`, ids nem lotes; `versao_formato` desconhecida é recusada
-- [ ] T083 [US6] Implementar `backend/src/rubricas/modelo.py` (`exportar(versao) -> dict` com `versao_formato: 1`, e `importar(dono, dict)`, que reutiliza `criar_rubrica`) e as rotas `GET /rubricas/{id}/modelo/` e `POST /rubricas/importar-modelo/` em `backend/src/rubricas/{views,urls}.py`
-- [ ] T084 [P] [US6] Adicionar os botões "Exportar modelo" e "Importar modelo" em `frontend/src/pages/Rubricas.tsx`. Criar `docs/modelos/verificacao-validacao.json` como primeiro modelo público
+- [X] T082 [P] [US6] Escrever `backend/tests/unit/test_modelo_rubrica.py`: a volta completa (exportar e importar) preserva critérios, níveis, descritores, pesos e tipos; o arquivo não contém `dono`, ids nem lotes; `versao_formato` desconhecida é recusada
+- [X] T083 [US6] Implementar `backend/src/rubricas/modelo.py` (`exportar(versao) -> dict` com `versao_formato: 1`, e `importar(dono, dict)`, que reutiliza `criar_rubrica`) e as rotas `GET /rubricas/{id}/modelo/` e `POST /rubricas/importar-modelo/` em `backend/src/rubricas/{views,urls}.py`
+- [X] T084 [P] [US6] Adicionar os botões "Exportar modelo" e "Importar modelo" em `frontend/src/pages/Rubricas.tsx`. Criar `docs/modelos/verificacao-validacao.json` como primeiro modelo público
 
 ---
 

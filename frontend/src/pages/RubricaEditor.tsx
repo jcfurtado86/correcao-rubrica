@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { chamar, ErroApi } from "../services/api";
+import { baixar, chamar, ErroApi } from "../services/api";
 import type { Rubrica, TipoCriterio } from "../services/tipos";
 
 type NivelForm = { rotulo: string; pontuacao: string; descritor: string };
@@ -73,7 +73,14 @@ export default function RubricaEditor() {
 
   return (
     <form onSubmit={salvar} className="grade">
-      <h1>{id ? "Editar rubrica" : "Nova rubrica"}</h1>
+      <div className="linha" style={{ justifyContent: "space-between" }}>
+        <h1 style={{ margin: 0 }}>{id ? "Editar rubrica" : "Nova rubrica"}</h1>
+        {id && (
+          <button type="button" onClick={() => baixar(`/rubricas/${id}/modelo/`, "modelo-rubrica.json")}>
+            Exportar modelo
+          </button>
+        )}
+      </div>
       {versao?.congelada && (
         <p className="alerta cartao">
           A versão {versao.numero} está em uso por um lote já pré-avaliado. Salvar cria a versão {versao.numero + 1};
