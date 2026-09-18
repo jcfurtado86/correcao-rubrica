@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "avaliar_criterio_v1.saida",
+  "title": "Saída de uma execução de pré-avaliação (um critério, uma resposta)",
+  "description": "Enviado ao Gemini como response_json_schema. O enum de 'nivel' é montado por critério: códigos dos níveis daquele critério + SEM_EVIDENCIA. O exemplo abaixo é de um critério com 4 níveis.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["nivel", "justificativa", "trechos"],
+  "properties": {
+    "nivel": {
+      "type": "string",
+      "enum": ["N1", "N2", "N3", "N4", "SEM_EVIDENCIA"]
+    },
+    "justificativa": {
+      "type": "string",
+      "description": "Por que o nível foi escolhido, referindo-se ao descritor do nível."
+    },
+    "trechos": {
+      "type": "array",
+      "description": "Cópias literais de trechos da resposta que sustentam o nível. Vazio só se nivel = SEM_EVIDENCIA.",
+      "items": { "type": "string" }
+    }
+  }
+}

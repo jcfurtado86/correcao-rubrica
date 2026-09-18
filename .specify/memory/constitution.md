@@ -1,50 +1,118 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report
+- Versão: (template) → 1.0.0 (ratificação inicial)
+- Princípios definidos: I. Decisão Docente Soberana; II. Ancoragem Obrigatória no Texto;
+  III. Incerteza como Informação; IV. Privacidade desde a Carga;
+  V. Rastreabilidade para Pesquisa; VI. Simplicidade de MVP e Custo Controlado
+- Seções adicionadas: Restrições de Dados, Modelo e Custo; Fluxo de Desenvolvimento e Portões de Qualidade
+- Seções removidas: nenhuma
+- TODOs pendentes: nenhum
+-->
+# Correção Assistida por Rubrica — Constituição
 
-## Core Principles
+Fonte: Canvas de Projeto "Correção Assistida por Rubrica com Aferição de Consistência Avaliativa"
+(autor Glauco Silva Sousa, orientador Júlio Furtado, 22/07/2026).
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+## Princípios Fundamentais
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### I. Decisão Docente Soberana (INEGOCIÁVEL)
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+- O sistema produz **pré-avaliação**, nunca nota. Nenhum resultado por critério ou total
+  pode ser exportado, publicado ou considerado final sem confirmação explícita do docente.
+- Todo resultado exibido ao docente é editável; confirmar e alterar são ações registradas
+  com autor, instante, valor sugerido, valor decidido e, quando houver, motivo.
+- Não existe operação de "aceitar tudo" em lote que dispense a visualização de cada
+  critério de cada resposta.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Razão: o risco nº 1 do canvas é a delegação da decisão avaliativa ao sistema.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### II. Ancoragem Obrigatória no Texto
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+- Toda atribuição de nível MUST vir acompanhada de justificativa e de ao menos um trecho
+  do texto do estudante que a sustente.
+- O trecho MUST ser verificado pelo sistema, e não pelo modelo: localizado no texto
+  original com posição inicial e final. Trecho não localizado invalida a execução.
+- Execução sem trecho válido não conta como voto de nível; conta como abstenção.
+- Ausência de conteúdo (resposta que não trata do critério) é um resultado próprio,
+  "sem evidência", sempre encaminhado ao docente, e nunca convertido automaticamente
+  em nível.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+Razão: explicabilidade e auditabilidade do julgamento; impede justificativa inventada.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+### III. Incerteza como Informação
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- Cada par (resposta, critério) é avaliado por N execuções independentes (N configurável,
+  padrão 5). Todas as execuções são persistidas, e não apenas o consolidado.
+- O resultado é "convergente" somente se a proporção do nível modal entre execuções
+  válidas atingir o limiar configurado (padrão 0,8) com mínimo de execuções válidas.
+  Caso contrário, é "divergente" e MUST ser apresentado como tal, com a distribuição
+  dos níveis e as justificativas de cada nível divergente. Nunca como valor único.
+- Casos divergentes e "sem evidência" são priorizados na fila do docente.
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+Razão: é a contribuição central do trabalho. O canvas mostra variação de 80 pontos em
+10 execuções idênticas, concentrada nos critérios interpretativos.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+### IV. Privacidade desde a Carga
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+- Identificadores de estudante (nome, e-mail, matrícula, CPF, usuário) são removidos
+  no momento da importação e substituídos por código pseudônimo. O identificador original
+  MUST NOT ser persistido no banco, em logs ou em chamadas ao modelo de linguagem.
+- O corpo da resposta passa por varredura de dados pessoais (os próprios identificadores
+  do arquivo, e-mails, números de matrícula/CPF) antes de ser armazenado.
+- A eventual chave de reidentificação é entregue ao docente uma única vez, no momento
+  da carga, e não fica no servidor.
+- Nenhum dado de estudante real é versionado no repositório.
+
+Razão: produção de estudante pode conter dado pessoal (LGPD); o canvas exige parecer.
+
+### V. Rastreabilidade para Pesquisa
+
+- Toda execução registra: modelo e provedor, versão do prompt, versão (hash) da rubrica,
+  parâmetros de geração, tokens, custo estimado, latência e resposta bruta.
+- Rubrica em uso por um lote é imutável; alteração gera nova versão.
+- Toda métrica do relatório (concordância, estabilidade, taxa de divergência, tempo)
+  MUST ser recalculável a partir dos registros, e exportável em formato tabular para
+  análise estatística externa.
+- O tempo de correção é medido pelo sistema (abertura → decisão), não autodeclarado.
+
+Razão: o produto é também instrumento de pesquisa; os resultados vão para artigo.
+
+### VI. Simplicidade de MVP e Custo Controlado
+
+- Um desenvolvedor, doze semanas: um único serviço implantável, um banco relacional,
+  sem microsserviços, filas externas ou infraestrutura que o problema não exija (YAGNI).
+- O acesso ao modelo de linguagem passa por uma interface única de provedor, permitindo
+  trocar entre serviço comercial e execução local sem alterar o domínio.
+- Todo lançamento de pré-avaliação exibe estimativa de custo antes de executar e respeita
+  teto configurável por lote; resultados idênticos são reaproveitados por cache.
+
+## Restrições de Dados, Modelo e Custo
+
+- Lotes reais só entram no sistema já anonimizados pelo próprio fluxo de carga;
+  lotes de teste sintéticos são rotulados como tal.
+- O prompt de avaliação é artefato versionado no repositório; mudança de prompt é
+  mudança de versão e invalida comparações diretas entre lotes.
+- Cache de pré-avaliação é chaveado por (modelo, versão do prompt, versão da rubrica,
+  critério, hash do texto, índice da execução). A reaplicação para medir estabilidade
+  usa rodada nova, fora do cache.
+
+## Fluxo de Desenvolvimento e Portões de Qualidade
+
+- Desenvolvimento guiado por especificação (Spec Kit): constitution → specify → clarify
+  → plan → tasks → implement. Nenhuma implementação sem spec aprovada.
+- Mecanismos centrais têm testes automatizados obrigatórios antes da integração:
+  verificação de âncora, consolidação/convergência, anonimização e cálculo de métricas.
+- Testes não chamam o modelo real; usam provedor simulado determinístico. Avaliação com
+  modelo real é experimento registrado, não teste de unidade.
+- Todo PR verifica conformidade com os Princípios I a IV.
+
+## Governança
+
+- Esta constituição prevalece sobre as demais práticas do projeto.
+- Emendas exigem registro do motivo, aprovação do orientador e atualização da versão:
+  MAJOR para remoção/redefinição de princípio; MINOR para princípio ou seção nova;
+  PATCH para esclarecimento de redação.
+- Complexidade que contrarie o Princípio VI MUST ser justificada no plano
+  (seção de rastreamento de complexidade).
+
+**Version**: 1.0.0 | **Ratified**: 2026-09-18 | **Last Amended**: 2026-09-18
