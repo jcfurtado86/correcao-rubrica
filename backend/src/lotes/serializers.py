@@ -4,11 +4,8 @@ from django.conf import settings
 from rest_framework import serializers
 
 from conectores.llm import modelo_padrao
-from conectores.precos import TABELA
 from lotes.models import Lote, Resposta
 from rubricas.models import VersaoRubrica
-
-MODELOS_COM_PRECO = sorted({m for m, *_ in TABELA})
 
 
 class LoteEntrada(serializers.Serializer):
@@ -20,6 +17,7 @@ class LoteEntrada(serializers.Serializer):
         max_digits=3, decimal_places=2, default=Decimal("0.80")
     )
     min_validas = serializers.IntegerField(min_value=1, default=3)
+    provedor_llm = serializers.CharField(required=False)
     modelo_llm = serializers.CharField(required=False)
     teto_usd = serializers.DecimalField(max_digits=8, decimal_places=2, min_value=0, required=False)
     sintetico = serializers.BooleanField(default=False)
@@ -33,17 +31,22 @@ class LoteEntrada(serializers.Serializer):
             raise serializers.ValidationError("O limiar precisa estar em (0,5; 1,0].")
         return valor
 
-    def validate_modelo_llm(self, valor):
-        if valor not in MODELOS_COM_PRECO:
-            raise serializers.ValidationError("Modelo sem preço cadastrado.")
-        return valor
-
     def validate(self, dados):
         if dados["min_validas"] > dados["n_execucoes"]:
             raise serializers.ValidationError(
                 {"min_validas": "O mínimo de válidas não pode passar do número de execuções."}
             )
-        dados.setdefault("modelo_llm", modelo_padrao(settings.LLM_PROVIDER))
+        provedor = dados.get("provedor_llm") or settings.LLM_PROVIDER
+        modelo = dados.get("modelo_llm") or modelo_padrao(provedor)
+        if "provedor_llm" in dados or "modelo_llm" in dados:
+            from conectores.catalogo import modelos_disponiveis
+
+            disponiveis = {(m["provedor"], m["modelo"]) for m in modelos_disponiveis()}
+            if (provedor, modelo) not in disponiveis:
+                raise serializers.ValidationError(
+                    {"modelo_llm": "Modelo indisponível neste servidor."}
+                )
+        dados["provedor_llm"], dados["modelo_llm"] = provedor, modelo
         return dados
 
 

@@ -171,3 +171,12 @@ class SugestoesDaRespostaView(APIView):
                 "criterios": sugestoes_da_resposta(resposta, rodada),
             }
         )
+
+
+class ModelosView(APIView):
+    """Modelos disponíveis para um lote neste servidor, com o preço vigente."""
+
+    def get(self, request):
+        from conectores.catalogo import modelos_disponiveis
+
+        return Response(modelos_disponiveis())

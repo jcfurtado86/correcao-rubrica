@@ -35,11 +35,18 @@ class GeminiLLMProvider(LLMProvider):
             response_mime_type="application/json",
             response_json_schema=esquema,
             seed=semente,
+            # Teto de saída: no piloto real, 2 de 200 chamadas degeneraram numa
+            # repetição até 65 mil tokens (245 s e US$ 0,24 cada). A saída normal,
+            # com raciocínio, fica em ~700 tokens.
+            max_output_tokens=settings.LLM_MAX_TOKENS_SAIDA,
         )
         # O cliente fica numa variável local até a resposta chegar. Encadeado
         # (`genai.Client(...).models...`), ele é coletado e fecha a conexão HTTP
         # no meio da chamada (armadilha registrada no Extenda).
-        cliente = genai.Client(api_key=self._api_key)
+        cliente = genai.Client(
+            api_key=self._api_key,
+            http_options=types.HttpOptions(timeout=settings.LLM_TIMEOUT_S * 1000),
+        )
         inicio = time.monotonic()
         try:
             resposta = cliente.models.generate_content(

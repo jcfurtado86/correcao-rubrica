@@ -12,13 +12,16 @@ from pathlib import Path
 
 from avaliacao.validacao import SEM_EVIDENCIA
 
-VERSAO_PROMPT = "avaliar_criterio_v1"
-_ARQUIVO = Path(__file__).resolve().parent / "prompts" / f"{VERSAO_PROMPT}.md"
+# v2 (2026-09-18): ausência de conteúdo vira SEM_EVIDENCIA também quando o nível
+# baixo se justifica pela falta de algo ("não apresenta exemplos"). No piloto real
+# com a v1, 9 de 200 execuções escolheram N1 sem trecho a citar (inválidas).
+VERSAO_PROMPT = "avaliar_criterio_v2"
+_PASTA = Path(__file__).resolve().parent / "prompts"
 
 
 @cache
-def _modelo() -> tuple[str, str]:
-    conteudo = _ARQUIVO.read_text(encoding="utf-8")
+def _modelo(versao: str = VERSAO_PROMPT) -> tuple[str, str]:
+    conteudo = (_PASTA / f"{versao}.md").read_text(encoding="utf-8")
     _, resto = conteudo.split("<!-- SISTEMA -->", 1)
     sistema, usuario = resto.split("<!-- USUARIO -->", 1)
     return sistema.strip(), usuario.strip()
@@ -32,8 +35,11 @@ def _niveis(criterio) -> str:
     return "\n".join(linhas)
 
 
-def montar(enunciado: str, criterio, texto_resposta: str) -> tuple[str, str]:
-    sistema, usuario = _modelo()
+def montar(
+    enunciado: str, criterio, texto_resposta: str, versao: str = VERSAO_PROMPT
+) -> tuple[str, str]:
+    """A rodada guarda a versão do prompt: retomar uma rodada antiga usa a dela."""
+    sistema, usuario = _modelo(versao)
     return sistema, usuario.format(
         enunciado=enunciado.strip(),
         criterio_nome=criterio.nome,

@@ -42,6 +42,13 @@ docker compose exec backend pytest
 | V8 | Estudo protocolo A | Criar estudo com a rodada do V6, convidar 8 e-mails fictícios, iniciar | 2 participantes por célula (braço × ordem). Numa resposta da metade sem apoio, a resposta da API tem só `"estado": "OCULTO"` (conferir no DevTools). Exportação com tempos por condição | US5, FR-024/025 |
 | V9 | Modelo de rubrica | Exportar a rubrica, importar com outro usuário | Critérios, níveis e descritores iguais, sem dados de lote | US6, FR-003 |
 
+## Automação e resultado (2026-09-18)
+
+Cada cenário tem script em [`e2e/`](../../e2e/README.md): V1–V3 `us1.py`, V4 `us2.py`, V5
+`us3.py`, V6 `us4.py`, V7 `v7_modelo_real.py`, V8 `us5.py`, V9 `us6.py`. Todos passaram na
+data acima. O V7, com o `gemini-3.6-flash` real, deu 100% de execuções válidas, 200 chamadas em
+126 s e custo real de 0,66 × a estimativa (detalhes em [research R7](research.md)).
+
 ## Bloqueios de pesquisa (fora do sistema)
 
 - Declaração ou aprovação ética aplicável ao estudo com docentes e termo de cessão das respostas

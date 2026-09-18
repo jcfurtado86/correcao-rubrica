@@ -315,7 +315,9 @@ def processar_execucao(execucao_id: int, tentativa: int = 0) -> str:
 
     criterio = execucao.criterio
     prefetch_related_objects([criterio], "niveis")
-    sistema, usuario = prompt.montar(rodada.lote.enunciado, criterio, execucao.resposta.texto)
+    sistema, usuario = prompt.montar(
+        rodada.lote.enunciado, criterio, execucao.resposta.texto, rodada.versao_prompt
+    )
     try:
         resultado = get_llm(rodada.provedor, rodada.modelo).avaliar(
             sistema, usuario, prompt.esquema(criterio), execucao.semente, execucao.indice

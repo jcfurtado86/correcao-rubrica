@@ -1,12 +1,15 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { chamar, ErroApi } from "../services/api";
-import type { Lote, RubricaResumo } from "../services/tipos";
+import { usd, type Lote, type RubricaResumo } from "../services/tipos";
+
+type Modelo = { provedor: string; modelo: string; rotulo: string; entrada_por_milhao: number; saida_por_milhao: number };
 import { useCarregar } from "../services/useCarregar";
 
 export default function LoteNovo() {
   const navegar = useNavigate();
   const { dados: rubricas } = useCarregar<RubricaResumo[]>("/rubricas/");
+  const { dados: modelos } = useCarregar<Modelo[]>("/modelos/");
   const [form, setForm] = useState({
     titulo: "",
     enunciado: "",
@@ -16,6 +19,7 @@ export default function LoteNovo() {
     min_validas: "3",
     teto_usd: "10",
     sintetico: false,
+    modelo: "",
   });
   const [erro, setErro] = useState<string | null>(null);
   const alterar = (parcial: Partial<typeof form>) => setForm((f) => ({ ...f, ...parcial }));
@@ -24,9 +28,12 @@ export default function LoteNovo() {
     e.preventDefault();
     setErro(null);
     try {
+      const escolhido = modelos?.find((m) => `${m.provedor}|${m.modelo}` === form.modelo);
+      const { modelo: _ignorado, ...resto } = form;
       const lote = await chamar<Lote>("/lotes/", {
         corpo: {
-          ...form,
+          ...resto,
+          ...(escolhido ? { provedor_llm: escolhido.provedor, modelo_llm: escolhido.modelo } : {}),
           versao_rubrica: Number(form.versao_rubrica),
           n_execucoes: Number(form.n_execucoes),
           min_validas: Number(form.min_validas),
@@ -57,6 +64,18 @@ export default function LoteNovo() {
             {rubricas?.map((r) => (
               <option key={r.id} value={r.versao_vigente.id}>
                 {r.titulo} (v{r.versao_vigente.numero})
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Modelo de linguagem
+          <select value={form.modelo} onChange={(e) => alterar({ modelo: e.target.value })}>
+            <option value="">Padrão do servidor</option>
+            {modelos?.map((m) => (
+              <option key={`${m.provedor}|${m.modelo}`} value={`${m.provedor}|${m.modelo}`}>
+                {m.rotulo}
+                {m.saida_por_milhao > 0 ? ` — ${usd(m.entrada_por_milhao)} / ${usd(m.saida_por_milhao)} por milhão de tokens` : ""}
               </option>
             ))}
           </select>

@@ -6,7 +6,7 @@ Fase 0 do plano. Cada item: decisão, razão e alternativas. Tudo o que está ma
 ## R1. Stack
 
 **Decisão**: mesmo stack do projeto Extenda. Backend Python 3.12 + Django 5.2 + DRF +
-drf-spectacular + django-allauth (headless). Assíncrono com Celery + Redis. PostgreSQL 16.
+drf-spectacular + simplejwt (login por e-mail; o allauth do Extenda foi dispensado, ver plan.md). Assíncrono com Celery + Redis. PostgreSQL 16.
 Frontend React 18 + TypeScript + Vite 6 + react-router 7. Testes com pytest + pytest-django e
 lint com ruff. Tudo em Docker Compose.
 
@@ -41,7 +41,7 @@ Modo batch custa 50% menos, mas é assíncrono (fora do MVP). A tabela de preço
 configuração, com data de vigência, porque o estudo pode cruzar a virada de 2027.
 
 **Alternativas**: Claude (Anthropic), rejeitado por diretriz de usar o provedor já contratado.
-Os modelos locais (Ollama) ficam atrás da mesma interface, como adaptador P3.
+Modelo local descartado pelo orientador (R14).
 
 ## R3. Piloto: variabilidade, sementes e âncoras (medido)
 
@@ -87,8 +87,8 @@ critério mais `SEM_EVIDENCIA`, e `trechos` é uma lista de strings. Contrato em
 Mesmo assim, a resposta passa por validação do lado do servidor, e JSON inválido marca a
 execução como inválida.
 
-**Prompt**: arquivo versionado `backend/src/avaliacao/prompts/avaliar_criterio_v1.md`. A
-versão é gravada em cada execução. Uma chamada por par (resposta, critério): o critério
+**Prompt**: arquivos versionados em `backend/src/avaliacao/prompts/` (v1 e v2, esta a vigente; ver R7). A
+versão é gravada na rodada, e retomar uma rodada usa a versão dela. Uma chamada por par (resposta, critério): o critério
 isolado evita efeito halo entre critérios e torna a divergência mensurável critério a critério.
 
 ## R5. Verificação de âncora
@@ -144,6 +144,32 @@ execuções restantes ficam `PENDENTE`, retomáveis depois de o teto ser elevado
 
 **Cache**: a unidade de cache é a rodada. Uma execução `CONCLUIDA` nunca é refeita. Retomar ou
 reprocessar a mesma rodada não gera custo novo (FR-011). Reaplicação cria rodada nova (FR-022).
+
+### Medido no quickstart V7 (2026-09-18)
+
+Lote sintético com 10 respostas normais × 4 critérios × N=5 = 200 chamadas ao
+`gemini-3.6-flash`, rubrica pública de `docs/modelos/` e concorrência de 8.
+
+| | Rodada 1 (prompt v1, sem teto de saída) | Rodada 2 (prompt v2, teto 8.192, timeout 60 s) |
+|---|---|---|
+| Execuções válidas | 94,5% (9 `SEM_TRECHO`, 2 `JSON_INVALIDO`) | **100%** |
+| Tempo total | 360 s | **126 s** (1,6 chamada/s; 800 chamadas ≈ 8 min) |
+| Tokens médios (entrada / saída / raciocínio) | 478 / 734 / 593 | 520 / 89 / 560 |
+| Latência mediana / p95 | 4,7 s / 7,7 s | 4,5 s / 6,8 s |
+| Custo real ÷ estimado | 1,25 (US$ 1,07 ÷ 0,85) | **0,66** (US$ 0,56 ÷ 0,86) |
+| Estados (40 pares) | 36 conv., 2 div., 2 indet. | 34 conv., 4 div., 2 sem evid. |
+
+Diagnóstico da rodada 1, que levou às correções:
+- **Geração degenerada**: 2 chamadas repetiram `\u0000` até 65 mil tokens de saída, com 245 s e
+  US$ 0,24 cada. Elas explicam a cauda de tempo e todo o excesso de custo. Correção:
+  `max_output_tokens=8192` e timeout de 60 s (falha passageira, com nova tentativa).
+- **Nível por ausência**: as 9 `SEM_TRECHO` foram N1 justificado pela falta de algo ("não apresenta
+  exemplos"), sem trecho a citar. Correção: prompt v2, que manda usar `SEM_EVIDENCIA` nesses casos
+  (Princípio II: ausência de conteúdo vai para a docente). A rodada guarda a versão do prompt.
+
+`TOKENS_SAIDA_ESTIMADOS=1050` ficou mantido: sem as gerações degeneradas, a saída real (visível +
+raciocínio) é de ~650 tokens, e a estimativa troca para a média observada depois de 10 execuções
+do lote.
 
 ## R8. Execução assíncrona e resiliência
 
@@ -240,9 +266,9 @@ fase de estudo.
 
 ## R14. Provedor local
 
-**Decisão**: a interface `LLMProvider` (padrão do Extenda) recebe prompt e esquema e devolve JSON,
-tokens e custo. O MVP entrega os adaptadores `dumb` e `gemini`. O adaptador `ollama` é P3: a
-interface fica pronta, mas o adaptador só é implementado se houver GPU disponível para o estudo.
+**Decisão (2026-09-18, orientador)**: não usar modelo local. O MVP usa só o Gemini na nuvem, em
+nível pago. A interface `LLMProvider` continua permitindo outro provedor no futuro. O MVP entrega
+os adaptadores `dumb` e `gemini`. Um adaptador Ollama chegou a ser escrito e foi removido.
 
 **Dublê determinístico** (`dumb`), com dois modos:
 - **Roteirizado**, para os testes: cenários por código de resposta (unânime, 4-1, 3-2, 2-2-1,
