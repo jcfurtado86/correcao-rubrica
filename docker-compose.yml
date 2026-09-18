@@ -1,0 +1,77 @@
+# Portas do host deslocadas para não colidir com o Extenda (5432, 6379, 5173, 8800).
+name: correcao-rubrica
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: correcao
+      POSTGRES_USER: correcao
+      POSTGRES_PASSWORD: correcao
+    ports:
+      - "55433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U correcao -d correcao"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+
+  backend:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://correcao:correcao@db:5432/correcao
+      CELERY_BROKER_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app
+      - ./dados_sinteticos:/dados_sinteticos
+      - ./analysis:/analysis
+    ports:
+      - "8810:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://correcao:correcao@db:5432/correcao
+      CELERY_BROKER_URL: redis://redis:6379/0
+    working_dir: /app/src
+    command: sh -c "celery -A config worker -l info -c $${LLM_CONCORRENCIA:-8}"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  frontend:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5183"
+    environment:
+      VITE_API_PROXY_TARGET: http://backend:8000
+    volumes:
+      - ./frontend:/app
+      # node_modules próprio do contêiner (Alpine/musl): o do host (glibc) quebraria o esbuild.
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5183:5183"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  frontend_node_modules:

@@ -1,0 +1,1 @@
+Explique a diferença entre verificação e validação de software e dê um exemplo de cada uma.

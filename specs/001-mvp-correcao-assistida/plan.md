@@ -24,8 +24,8 @@ escondê-la ([research R3](research.md#r3-piloto-variabilidade-sementes-e-âncor
 
 **Language/Version**: Python 3.12 (backend); TypeScript 5.7 (frontend)
 
-**Primary Dependencies**: Django 5.2, djangorestframework, drf-spectacular, django-allauth
-(headless) + simplejwt, Celery 5 + redis, google-genai, openpyxl, scikit-learn, statsmodels,
+**Primary Dependencies**: Django 5.2, djangorestframework, drf-spectacular, simplejwt,
+Celery 5 + redis, google-genai, openpyxl, scikit-learn, statsmodels,
 krippendorff. Frontend: React 18, react-router 7, Vite 6
 
 **Storage**: PostgreSQL 16 (sem pgvector). Redis só como broker do Celery
@@ -91,7 +91,7 @@ specs/001-mvp-correcao-assistida/
 backend/
 ├── src/
 │   ├── config/           # settings (12-factor), urls, celery.py
-│   ├── core/             # Usuario, papéis, convites (allauth), permissões
+│   ├── core/             # Usuario, papéis, convites (token Django), permissões
 │   ├── conectores/       # llm.py: factory + DubleLLMProvider + GeminiLLMProvider; precos.py
 │   ├── rubricas/         # Rubrica, VersaoRubrica, Criterio, Nivel; congelamento; modelo JSON
 │   ├── lotes/            # Lote, Resposta; importacao.py (leitura em memória), anonimizacao.py
@@ -127,6 +127,14 @@ docker-compose.yml           # db (postgres:16), redis, backend, worker, fronten
 `alocacao`, `calculos`) são funções puras sem ORM, testáveis isoladamente, que a constituição
 exige com teste antes da integração. `analysis/` fica fora do backend de propósito: é o
 verificador independente das métricas.
+
+## Desvios registrados na implementação
+
+- **allauth dispensado** (2026-09-18, fase de implementação): no Extenda ele serve para
+  autocadastro, verificação de e-mail e login social, e nada disso existe aqui (FR-026: contas só
+  por convite ou admin). O login usa simplejwt com e-mail. O convite de estudo usa
+  `PasswordResetTokenGenerator` do Django para o link de definição de senha. Menos dependência,
+  mesmo resultado (Princípio VI).
 
 ## Complexity Tracking
 

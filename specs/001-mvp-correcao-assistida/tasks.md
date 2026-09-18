@@ -34,21 +34,21 @@ para copiar e adaptar: `~/Projetos/extenda/`.
 
 **Purpose**: esqueleto do repositório, dependências e contêineres
 
-- [ ] T001 Criar a estrutura de diretórios do plan.md: `backend/src/{config,core,conectores,rubricas,lotes,avaliacao,revisao,estudos,metricas}/` (cada app Django com `__init__.py`, `apps.py`, `models.py`, `admin.py`, `migrations/__init__.py`), `backend/tests/{unit,integration,contract}/`, `frontend/`, `analysis/`, `dados_sinteticos/`, `docs/`
-- [ ] T002 Criar `backend/requirements.txt` com as mesmas versões do Extenda (`Django==5.2.15`, `djangorestframework==3.17.1`, `djangorestframework-simplejwt==5.5.1`, `drf-spectacular==0.29.0`, `django-environ==0.14.0`, `psycopg[binary]==3.3.4`, `celery==5.6.3`, `redis==6.4.0`, `google-genai==2.10.0`, `gunicorn==23.0.0`, `openpyxl==3.1.5`, `django-allauth==65.19.1`) mais `numpy`, `scikit-learn`, `statsmodels` e `krippendorff`, fixados na versão resolvida na instalação. Criar também `backend/requirements-dev.txt` (`-r requirements.txt`, `pytest==8.4.2`, `pytest-django==4.12.0`, `pytest-cov==6.3.0`, `ruff==0.15.20`)
-- [ ] T003 Criar o projeto Django em `backend/src/manage.py` e `backend/src/config/{settings.py,urls.py,wsgi.py,asgi.py}`:
+- [X] T001 Criar a estrutura de diretórios do plan.md: `backend/src/{config,core,conectores,rubricas,lotes,avaliacao,revisao,estudos,metricas}/` (cada app Django com `__init__.py`, `apps.py`, `models.py`, `admin.py`, `migrations/__init__.py`), `backend/tests/{unit,integration,contract}/`, `frontend/`, `analysis/`, `dados_sinteticos/`, `docs/`
+- [X] T002 Criar `backend/requirements.txt` com as mesmas versões do Extenda (`Django==5.2.15`, `djangorestframework==3.17.1`, `djangorestframework-simplejwt==5.5.1`, `drf-spectacular==0.29.0`, `django-environ==0.14.0`, `psycopg[binary]==3.3.4`, `celery==5.6.3`, `redis==6.4.0`, `google-genai==2.10.0`, `gunicorn==23.0.0`, `openpyxl==3.1.5`, `django-allauth==65.19.1`) mais `numpy`, `scikit-learn`, `statsmodels` e `krippendorff`, fixados na versão resolvida na instalação. Criar também `backend/requirements-dev.txt` (`-r requirements.txt`, `pytest==8.4.2`, `pytest-django==4.12.0`, `pytest-cov==6.3.0`, `ruff==0.15.20`)
+- [X] T003 Criar o projeto Django em `backend/src/manage.py` e `backend/src/config/{settings.py,urls.py,wsgi.py,asgi.py}`:
   - `settings.py` 12-factor com django-environ, todas as apps de T001 registradas e `AUTH_USER_MODEL = "core.Usuario"`;
   - `LANGUAGE_CODE="pt-br"`, `TIME_ZONE="America/Belem"`, `USE_TZ=True`;
   - `FILE_UPLOAD_HANDLERS = ["django.core.files.uploadhandler.MemoryFileUploadHandler"]` e `FILE_UPLOAD_MAX_MEMORY_SIZE = DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024`, para o upload nunca tocar o disco (research R9);
   - variáveis `LLM_PROVIDER` (padrão `"dumb"`), `GEMINI_API_KEY`, `GEMINI_MODEL` (padrão `"gemini-3.6-flash"`), `GEMINI_PAID_TIER` (bool, padrão `False`), `TETO_USD_PADRAO` (padrão 10), `LLM_CONCORRENCIA` (padrão 8), `LLM_RATE_LIMIT` (padrão `"120/m"`), `TOKENS_SAIDA_ESTIMADOS` (padrão 1050), `LIMITE_CARACTERES_RESPOSTA` (padrão 15000)
-- [ ] T004 [P] Criar `backend/src/config/celery.py` (app `correcao`, `autodiscover_tasks`) e importá-lo em `backend/src/config/__init__.py`. Em settings: `CELERY_BROKER_URL` do ambiente, `CELERY_TASK_ACKS_LATE=True`, `CELERY_WORKER_PREFETCH_MULTIPLIER=1` e `CELERY_TASK_ALWAYS_EAGER` lido do ambiente (verdadeiro nos testes)
-- [ ] T005 [P] Criar os arquivos de implantação `backend/Dockerfile`, `docker-compose.yml` e `.env.example`:
+- [X] T004 [P] Criar `backend/src/config/celery.py` (app `correcao`, `autodiscover_tasks`) e importá-lo em `backend/src/config/__init__.py`. Em settings: `CELERY_BROKER_URL` do ambiente, `CELERY_TASK_ACKS_LATE=True`, `CELERY_WORKER_PREFETCH_MULTIPLIER=1` e `CELERY_TASK_ALWAYS_EAGER` lido do ambiente (verdadeiro nos testes)
+- [X] T005 [P] Criar os arquivos de implantação `backend/Dockerfile`, `docker-compose.yml` e `.env.example`:
   - `backend/Dockerfile`, a partir de `~/Projetos/extenda/backend/Dockerfile` (`python:3.12-slim`, sem Tesseract/poppler/catdoc);
   - `docker-compose.yml` com os serviços `db` (`postgres:16`), `redis` (`redis:7-alpine`), `backend` (`runserver` em dev), `worker` (`celery -A config worker -c ${LLM_CONCORRENCIA}`) e `frontend` (`node:22-alpine`, `npm run dev`);
   - `.env.example` com todas as variáveis de T003/T004 e o comentário "GEMINI_PAID_TIER=true só com chave de projeto com faturamento; nunca nível gratuito".
-- [ ] T006 [P] Criar o frontend em `frontend/` com Vite 6 + React 18.3.1 + TypeScript 5.7.3 + react-router-dom 7.18.1 + vitest (`frontend/package.json`, `vite.config.ts` com proxy `/api` → backend, `tsconfig.json`, `src/main.tsx`, `src/App.tsx`)
-- [ ] T007 [P] Criar `backend/pyproject.toml` com a configuração do ruff (a mesma do Extenda) e do pytest (`DJANGO_SETTINGS_MODULE=config.settings`, `pythonpath=["src"]`, `testpaths=["tests"]`). Criar `backend/tests/conftest.py` com as fixtures `docente`, `outra_docente`, `pesquisador`, `api` (APIClient autenticado por JWT) e `settings_dublê` (força `LLM_PROVIDER="dumb"` e `CELERY_TASK_ALWAYS_EAGER=True`)
-- [ ] T008 [P] Criar `README.md` na raiz com o objetivo do projeto (link para o canvas e a spec), o comando de subida e um link para `specs/001-mvp-correcao-assistida/quickstart.md`
+- [X] T006 [P] Criar o frontend em `frontend/` com Vite 6 + React 18.3.1 + TypeScript 5.7.3 + react-router-dom 7.18.1 + vitest (`frontend/package.json`, `vite.config.ts` com proxy `/api` → backend, `tsconfig.json`, `src/main.tsx`, `src/App.tsx`)
+- [X] T007 [P] Criar `backend/pyproject.toml` com a configuração do ruff (a mesma do Extenda) e do pytest (`DJANGO_SETTINGS_MODULE=config.settings`, `pythonpath=["src"]`, `testpaths=["tests"]`). Criar `backend/tests/conftest.py` com as fixtures `docente`, `outra_docente`, `pesquisador`, `api` (APIClient autenticado por JWT) e `settings_dublê` (força `LLM_PROVIDER="dumb"` e `CELERY_TASK_ALWAYS_EAGER=True`)
+- [X] T008 [P] Criar `README.md` na raiz com o objetivo do projeto (link para o canvas e a spec), o comando de subida e um link para `specs/001-mvp-correcao-assistida/quickstart.md`
 
 ---
 
@@ -58,31 +58,28 @@ para copiar e adaptar: `~/Projetos/extenda/`.
 
 **⚠️ CRITICAL**: nenhuma história começa antes desta fase
 
-- [ ] T009 Criar `Usuario` em `backend/src/core/models.py`, estendendo `AbstractUser`, "login por e-mail":
+- [X] T009 Criar `Usuario` em `backend/src/core/models.py`, estendendo `AbstractUser`, "login por e-mail":
   - `email` único como `USERNAME_FIELD`;
   - `nome`;
   - `papel` em {`DOCENTE`, `PESQUISADOR`}, "padrão `DOCENTE`";
   - manager que cria usuário e superusuário sem username (superusuário com papel `PESQUISADOR`).
 
   Registrar no `backend/src/core/admin.py` e gerar a migração.
-- [ ] T010 Configurar a autenticação em `backend/src/config/settings.py` e `backend/src/core/`, copiando e adaptando o Extenda:
-  - settings do allauth headless (`~/Projetos/extenda/backend/src/config/settings.py` linhas 248–330) com `ACCOUNT_LOGIN_METHODS={"email"}`, sem login social e **sem autocadastro** (adapter com `is_open_for_signup=False`; contas só pelo admin ou por convite de estudo);
-  - `SIMPLE_JWT`;
-  - as views `ObtencaoDeToken`, `TokenRefreshView` e `MeView` (de `~/Projetos/extenda/backend/src/core/autenticacao.py`) em `backend/src/core/autenticacao.py`, com rotas `/api/auth/token/`, `/api/auth/token/refresh/` e `/api/auth/me/` em `backend/src/core/urls.py`.
-- [ ] T011 [P] Criar `backend/src/core/permissions.py` (`EhDono` pelo campo `dono`, `EhPesquisador` por `papel == "PESQUISADOR"`) e `backend/src/core/exceptions.py`, com um handler DRF que devolve `{"detail": "...", "codigo": "..."}` (formato de erro de contracts/api.md). Configurar em settings `REST_FRAMEWORK`: autenticação JWT, `IsAuthenticated` como padrão, `drf_spectacular.openapi.AutoSchema` e esse handler
-- [ ] T012 Montar `backend/src/config/urls.py` com `/admin/`, `/api/schema/`, `/api/docs/` (drf-spectacular), `/api/auth/` e `include` das `urls.py` de cada app sob `/api/`
-- [ ] T013 [P] Criar a interface de provedor em `backend/src/conectores/llm.py`, no padrão da factory do Extenda (`~/Projetos/extenda/backend/src/conectores/llm.py`):
+- [X] T010 Configurar a autenticação em `backend/src/config/settings.py` e `backend/src/core/` com simplejwt e login por e-mail, **sem allauth** (ver "Desvios registrados" no plan.md): rotas `/api/auth/token/`, `/api/auth/token/refresh/` e `/api/auth/me/` em `backend/src/core/urls.py`; `SIMPLE_JWT` como no Extenda (60 min / 7 dias, rotação); sem autocadastro
+- [X] T011 [P] Criar `backend/src/core/permissions.py` (`EhDono` pelo campo `dono`, `EhPesquisador` por `papel == "PESQUISADOR"`) e `backend/src/core/exceptions.py`, com um handler DRF que devolve `{"detail": "...", "codigo": "..."}` (formato de erro de contracts/api.md). Configurar em settings `REST_FRAMEWORK`: autenticação JWT, `IsAuthenticated` como padrão, `drf_spectacular.openapi.AutoSchema` e esse handler
+- [X] T012 Montar `backend/src/config/urls.py` com `/admin/`, `/api/schema/`, `/api/docs/` (drf-spectacular), `/api/auth/` e `include` das `urls.py` de cada app sob `/api/`
+- [X] T013 [P] Criar a interface de provedor em `backend/src/conectores/llm.py`, no padrão da factory do Extenda (`~/Projetos/extenda/backend/src/conectores/llm.py`):
   - classe `LLMProvider` com `modelo: str` e o método `avaliar(sistema: str, usuario: str, esquema: dict, semente: int) -> ResultadoLLM`;
   - dataclass `ResultadoLLM(texto: str, tokens_entrada: int, tokens_saida: int, tokens_raciocinio: int, latencia_ms: int)`;
   - exceção `IAIndisponivel` (erro recuperável: 429, 503, rede) e `ErroLLM` (não recuperável);
   - `registrar_provedor(nome, classe)` e `get_llm(nome=None)` lendo `settings.LLM_PROVIDER`.
-- [ ] T014 [P] Criar `GeminiLLMProvider` em `backend/src/conectores/gemini.py` com `google-genai`:
+- [X] T014 [P] Criar `GeminiLLMProvider` em `backend/src/conectores/gemini.py` com `google-genai`:
   - `genai.Client(api_key=settings.GEMINI_API_KEY)` guardado numa **variável local** até a resposta chegar, por causa da armadilha de GC documentada no Extenda (research R8);
   - `GenerateContentConfig(system_instruction=sistema, response_mime_type="application/json", response_json_schema=esquema, seed=semente)`, **sem definir temperatura** (R3);
   - tokens de `usage_metadata.prompt_token_count`, `candidates_token_count` e `thoughts_token_count` (0 se ausente);
   - `google.genai.errors.ServerError` 5xx, `ClientError` 429 e erros de rede mapeados para `IAIndisponivel`; demais erros para `ErroLLM`;
   - registrar como `"gemini"`.
-- [ ] T015 [P] Criar `DubleLLMProvider` em `backend/src/conectores/duble.py`, registrado como `"dumb"` e sem rede:
+- [X] T015 [P] Criar `DubleLLMProvider` em `backend/src/conectores/duble.py`, registrado como `"dumb"` e sem rede:
   - lê do prompt do usuário o texto entre `<<<` e `>>>` e o enum de níveis do esquema;
   - se o texto contém `[[cenario:X]]`, segue o roteiro X pelo `indice` derivado da semente (o índice vai no prompt de sistema como `#indice=i`). Roteiros:
     - `unanime`: todas no 2º nível;
@@ -96,15 +93,15 @@ para copiar e adaptar: `~/Projetos/extenda/`.
   - o trecho é a primeira frase do texto sem o marcador, com ≥ 3 palavras;
   - tokens fictícios fixos (entrada = len(prompt)//4, saída 150, raciocínio 0);
   - guarda todos os prompts recebidos numa lista de classe `prompts_recebidos`, para a auditoria de identificadores.
-- [ ] T016 [P] Criar a tabela de preços em `backend/src/conectores/precos.py`, com vigência (research R2):
+- [X] T016 [P] Criar a tabela de preços em `backend/src/conectores/precos.py`, com vigência (research R2):
   - `gemini-3.6-flash` e `gemini-3.8-flash`: US$ 0,75 / 3,75 por 1M até 2026-12-31 e 1,50 / 7,50 a partir de 2027-01-01;
   - `gemini-2.5-flash`: 0,30 / 2,50;
   - `gemini-2.5-flash-lite`: 0,10 / 0,40;
   - `dublê`: 0 / 0.
 
   Função `custo_usd(modelo, tokens_entrada, tokens_saida_mais_raciocinio, data) -> Decimal`, que levanta erro para modelo sem preço.
-- [ ] T017 [P] Escrever `backend/tests/unit/test_precos.py` (virada de vigência em 2027-01-01, modelo desconhecido) e `backend/tests/unit/test_duble.py` (cada roteiro de T015 produz a sequência esperada de níveis para os índices 1–5, e o trecho é substring do texto, exceto em `trecho_inventado`)
-- [ ] T018 [P] Criar `dados_sinteticos/gerar_turma_ficticia.py`. Ele gera `turma_ficticia.xlsx` e `turma_ficticia.csv` (separador `;`) com 40 linhas e colunas no formato do Moodle: `Sobrenome`, `Nome`, `Endereço de email`, `Número de identificação`, `Resposta 1`. As respostas tratam do enunciado "Explique a diferença entre verificação e validação de software e dê um exemplo de cada uma", e o conjunto inclui:
+- [X] T017 [P] Escrever `backend/tests/unit/test_precos.py` (virada de vigência em 2027-01-01, modelo desconhecido) e `backend/tests/unit/test_duble.py` (cada roteiro de T015 produz a sequência esperada de níveis para os índices 1–5, e o trecho é substring do texto, exceto em `trecho_inventado`)
+- [X] T018 [P] Criar `dados_sinteticos/gerar_turma_ficticia.py`. Ele gera `turma_ficticia.xlsx` e `turma_ficticia.csv` (separador `;`) com 40 linhas e colunas no formato do Moodle: `Sobrenome`, `Nome`, `Endereço de email`, `Número de identificação`, `Resposta 1`. As respostas tratam do enunciado "Explique a diferença entre verificação e validação de software e dê um exemplo de cada uma", e o conjunto inclui:
   - 7 respostas com os marcadores `[[cenario:...]]` de T015, um por roteiro;
   - 2 vazias;
   - 1 com mais de 15.000 caracteres;
@@ -113,7 +110,7 @@ para copiar e adaptar: `~/Projetos/extenda/`.
   - 1 que cita o nome de um colega.
 
   Gera também `dados_sinteticos/identificadores_plantados.txt`, com todos os nomes, e-mails, CPFs e matrículas usados, um por linha.
-- [ ] T019 [P] Criar a base do frontend: `frontend/src/services/api.ts` (fetch com JWT, renovação por refresh e erro no formato `{detail, codigo}`), `frontend/src/services/auth.tsx` (contexto de sessão), `frontend/src/pages/Login.tsx` e o roteamento protegido em `frontend/src/App.tsx`, com layout e menu (Rubricas, Lotes, Estudos)
+- [X] T019 [P] Criar a base do frontend: `frontend/src/services/api.ts` (fetch com JWT, renovação por refresh e erro no formato `{detail, codigo}`), `frontend/src/services/auth.tsx` (contexto de sessão), `frontend/src/pages/Login.tsx` e o roteamento protegido em `frontend/src/App.tsx`, com layout e menu (Rubricas, Lotes, Estudos)
 
 **Checkpoint**: login funciona, `pytest` roda, e `get_llm()` devolve o dublê ou o Gemini conforme o `.env`
 
@@ -129,14 +126,14 @@ para copiar e adaptar: `~/Projetos/extenda/`.
 
 > Escrever primeiro e ver falhar
 
-- [ ] T020 [P] [US1] Escrever `backend/tests/unit/test_anonimizacao.py` (contracts/importacao.md), cobrindo:
+- [X] T020 [P] [US1] Escrever `backend/tests/unit/test_anonimizacao.py` (contracts/importacao.md), cobrindo:
   - e-mail vira `[EMAIL]`;
   - CPF `000.000.000-00` e 11 dígitos viram `[CPF]`;
   - "sequências de 8 a 14 dígitos" viram `[MATRICULA]`;
   - nomes da própria linha **e de outra linha** viram `[ESTUDANTE]`, sem acento e sem caixa, "com limite de palavra": o nome "Ana" não altera "análise";
   - palavras de nome com < 3 letras são ignoradas;
   - `n_substituicoes` confere com as substituições feitas.
-- [ ] T021 [P] [US1] Escrever `backend/tests/unit/test_ancora.py` (research R5), cobrindo:
+- [X] T021 [P] [US1] Escrever `backend/tests/unit/test_ancora.py` (research R5), cobrindo:
   - trecho exato;
   - diferenças de espaço e quebra de linha;
   - aspas e hífens tipográficos;
@@ -146,14 +143,14 @@ para copiar e adaptar: `~/Projetos/extenda/`.
   - `SEM_EVIDENCIA` com trechos → `INCOERENTE_SEM_EVIDENCIA`;
   - nível com lista vazia → `SEM_TRECHO`;
   - 1 trecho não localizado entre 2 invalida a execução.
-- [ ] T022 [P] [US1] Escrever `backend/tests/unit/test_importacao.py`, cobrindo:
+- [X] T022 [P] [US1] Escrever `backend/tests/unit/test_importacao.py`, cobrindo:
   - CSV com `,` e com `;`, UTF-8 com e sem BOM, e XLSX (primeira planilha);
   - recusa acima de 10 MB e de 1.000 linhas;
   - avisos `VAZIA`, `LONGA` (> 15.000 caracteres) e `DUPLICADA`;
   - códigos `R001…` únicos e em ordem diferente da do arquivo (semente fixa no teste);
   - CSV da chave com `codigo,identificador`;
   - nenhuma coluna de identificação no retorno da importação, exceto dentro da chave.
-- [ ] T023 [P] [US1] Escrever `backend/tests/integration/test_rodada.py` (Celery eager, dublê), cobrindo:
+- [X] T023 [P] [US1] Escrever `backend/tests/integration/test_rodada.py` (Celery eager, dublê), cobrindo:
   - a rodada cria `respostas elegíveis × critérios × N` execuções;
   - resposta `VAZIA` gera execuções `SEM_EVIDENCIA` válidas sem chamar o provedor;
   - resposta `LONGA` não gera execução;
@@ -165,64 +162,64 @@ para copiar e adaptar: `~/Projetos/extenda/`.
   - `retomar` com teto maior conclui sem reexecutar nenhuma `CONCLUIDA` (contar chamadas ao dublê);
   - lote não sintético com `LLM_PROVIDER="gemini"` e `GEMINI_PAID_TIER=False` é recusado com `codigo="nivel_gratuito"`;
   - sementes distintas por índice e iguais ao recalcular a mesma rodada.
-- [ ] T024 [P] [US1] Escrever `backend/tests/integration/test_sem_identificadores.py`. Ele importa `turma_ficticia.csv` (lote não sintético, dublê), executa a rodada e procura cada linha de `identificadores_plantados.txt`, sem acento e sem caixa, em três lugares: todas as colunas de texto de todas as tabelas, a captura de logs (`caplog`) e `DubleLLMProvider.prompts_recebidos`. O resultado esperado é 0 ocorrências (SC-003)
-- [ ] T025 [P] [US1] Escrever `backend/tests/contract/test_api_us1.py`, conferindo formatos e status de `contracts/api.md` nas seções Rubricas (POST/GET/PUT, 201 com nova versão quando congelada), Lotes e importação (prévia sem gravar nada; importação única por lote), Rodadas (estimativa, recusa sem `confirmar`, progresso, retomar) e `GET /respostas/{id}/execucoes/` (outra docente recebe 404)
+- [X] T024 [P] [US1] Escrever `backend/tests/integration/test_sem_identificadores.py`. Ele importa `turma_ficticia.csv` (lote não sintético, dublê), executa a rodada e procura cada linha de `identificadores_plantados.txt`, sem acento e sem caixa, em três lugares: todas as colunas de texto de todas as tabelas, a captura de logs (`caplog`) e `DubleLLMProvider.prompts_recebidos`. O resultado esperado é 0 ocorrências (SC-003)
+- [X] T025 [P] [US1] Escrever `backend/tests/contract/test_api_us1.py`, conferindo formatos e status de `contracts/api.md` nas seções Rubricas (POST/GET/PUT, 201 com nova versão quando congelada), Lotes e importação (prévia sem gravar nada; importação única por lote), Rodadas (estimativa, recusa sem `confirmar`, progresso, retomar) e `GET /respostas/{id}/execucoes/` (outra docente recebe 404)
 
 ### Implementation for User Story 1
 
-- [ ] T026 [P] [US1] Criar os modelos em `backend/src/rubricas/models.py`, conforme data-model.md:
+- [X] T026 [P] [US1] Criar os modelos em `backend/src/rubricas/models.py`, conforme data-model.md:
   - `Rubrica(dono FK Usuario, titulo, descricao)`;
   - `VersaoRubrica(rubrica, numero "único por rubrica, sequencial", congelada bool, hash sha256 nulo)`;
   - `Criterio(versao, ordem "contígua a partir de 1", nome, descricao, peso "decimal ≥ 0, padrão 1", tipo OBJETIVO|INTERPRETATIVO)`;
   - `Nivel(criterio, ordem "contígua a partir de 1", codigo "N1…Nk gerado da ordem", rotulo, descritor, pontuacao decimal)`.
 
   `save()` e `delete()` levantam erro se a versão estiver congelada. Gerar a migração.
-- [ ] T027 [P] [US1] Criar os modelos em `backend/src/lotes/models.py`:
+- [X] T027 [P] [US1] Criar os modelos em `backend/src/lotes/models.py`:
   - `Lote(dono, titulo, enunciado obrigatório, versao_rubrica FK PROTECT, n_execucoes "int 1–10, padrão 5", limiar_acordo "decimal (0,5; 1,0], padrão 0,8", min_validas "int ≥ 1, ≤ n_execucoes, padrão 3", provedor_llm, modelo_llm, teto_usd, sintetico bool)`, com validação em `clean()`;
   - `Resposta(lote, codigo "único por lote", texto imutável, hash_texto sha256, n_substituicoes int, aviso VAZIA|LONGA|null)`, sem nenhum campo de identificador.
 
   Gerar a migração.
-- [ ] T028 [P] [US1] Criar os modelos em `backend/src/avaliacao/models.py`:
+- [X] T028 [P] [US1] Criar os modelos em `backend/src/avaliacao/models.py`:
   - `Rodada(lote, numero, semente_base, versao_prompt, provedor, modelo, custo_estimado_usd, custo_acumulado_usd, teto_usd, confirmada_por, status ESTIMADA|EM_EXECUCAO|PAUSADA_TETO|CONCLUIDA|COM_FALHAS)`;
   - `Execucao(rodada, resposta, criterio, indice, semente, status PENDENTE|EM_ANDAMENTO|CONCLUIDA|FALHOU, valida null, motivo_invalidez JSON_INVALIDO|NIVEL_FORA|SEM_TRECHO|TRECHO_NAO_LOCALIZADO|TRECHO_CURTO|INCOERENTE_SEM_EVIDENCIA|null, nivel_codigo, nivel FK null, justificativa, resposta_bruta, tokens_entrada, tokens_saida, tokens_raciocinio, custo_usd, latencia_ms, tentativas, erro)` com `UniqueConstraint(rodada, resposta, criterio, indice)`;
   - `Trecho(execucao, texto_citado, localizado, inicio null, fim null)`.
 
   Gerar a migração.
-- [ ] T029 [US1] Registrar no Django admin (backoffice do pesquisador) os modelos de T026–T028 em `backend/src/{rubricas,lotes,avaliacao}/admin.py`, com `Execucao` e `Trecho` só leitura, filtros por `rodada`, `status`, `valida` e `motivo_invalidez`, e `Resposta` sem edição de `texto`
-- [ ] T030 [US1] Implementar `backend/src/rubricas/services.py`:
+- [X] T029 [US1] Registrar no Django admin (backoffice do pesquisador) os modelos de T026–T028 em `backend/src/{rubricas,lotes,avaliacao}/admin.py`, com `Execucao` e `Trecho` só leitura, filtros por `rodada`, `status`, `valida` e `motivo_invalidez`, e `Resposta` sem edição de `texto`
+- [X] T030 [US1] Implementar `backend/src/rubricas/services.py`:
   - `criar_rubrica(dono, dados)`: versão 1, "≥ 1 critério, ≥ 2 níveis", `ordem` e `codigo` derivados da posição;
   - `atualizar_rubrica(rubrica, dados)`: edita a vigente se não estiver congelada; caso contrário cria `numero + 1`;
   - `congelar(versao)`: `hash` = sha256 do JSON canônico (`sort_keys=True`) de critérios e níveis.
 
   Implementar também `serializers.py`, `views.py` e `urls.py` do app para `GET/POST /rubricas/`, `GET/PUT /rubricas/{id}/`, com permissão `EhDono`.
-- [ ] T031 [P] [US1] Implementar `backend/src/lotes/anonimizacao.py` como funções puras sem ORM: `termos_de_identificacao(linhas, colunas)` e `anonimizar(texto, termos) -> (texto, n_substituicoes)`, com a ordem de substituição de contracts/importacao.md (e-mail, CPF, matrícula, nomes)
-- [ ] T032 [US1] Implementar `backend/src/lotes/importacao.py`:
+- [X] T031 [P] [US1] Implementar `backend/src/lotes/anonimizacao.py` como funções puras sem ORM: `termos_de_identificacao(linhas, colunas)` e `anonimizar(texto, termos) -> (texto, n_substituicoes)`, com a ordem de substituição de contracts/importacao.md (e-mail, CPF, matrícula, nomes)
+- [X] T032 [US1] Implementar `backend/src/lotes/importacao.py`:
   - `ler_planilha(arquivo_em_memoria)`: CSV UTF-8 ou UTF-8-BOM com separador detectado por `csv.Sniffer`, ou XLSX pela primeira planilha com `openpyxl` `read_only`; limites de 10 MB e 1.000 linhas;
   - `previa(...)`: colunas, 5 linhas de amostra e total;
   - `importar(lote, arquivo, coluna_resposta, colunas_identificacao, gerar_chave)`: anonimiza em memória, embaralha, atribui `R001…`, grava só `Resposta`, calcula os avisos, monta a chave CSV em memória e a devolve em base64 **sem gravar**; recusa segunda importação no mesmo lote.
-- [ ] T033 [US1] Implementar `backend/src/lotes/{serializers,views,urls}.py` para `POST /lotes/`, `POST /lotes/{id}/importacao/previa/`, `POST /lotes/{id}/importacao/`, `GET /lotes/{id}/` e `GET /lotes/{id}/respostas/`, conforme contracts/api.md. A validação de `POST /lotes/` exige que a versão da rubrica pertença ao dono
-- [ ] T034 [P] [US1] Criar o prompt versionado `backend/src/avaliacao/prompts/avaliar_criterio_v1.md` (sistema: avaliar só o critério informado; copiar trechos literais, sem parafrasear e sem reticências; `SEM_EVIDENCIA` com lista vazia quando a resposta não trata do critério) e `backend/src/avaliacao/prompt.py`, com:
+- [X] T033 [US1] Implementar `backend/src/lotes/{serializers,views,urls}.py` para `POST /lotes/`, `POST /lotes/{id}/importacao/previa/`, `POST /lotes/{id}/importacao/`, `GET /lotes/{id}/` e `GET /lotes/{id}/respostas/`, conforme contracts/api.md. A validação de `POST /lotes/` exige que a versão da rubrica pertença ao dono
+- [X] T034 [P] [US1] Criar o prompt versionado `backend/src/avaliacao/prompts/avaliar_criterio_v1.md` (sistema: avaliar só o critério informado; copiar trechos literais, sem parafrasear e sem reticências; `SEM_EVIDENCIA` com lista vazia quando a resposta não trata do critério) e `backend/src/avaliacao/prompt.py`, com:
   - `VERSAO_PROMPT = "avaliar_criterio_v1"`;
   - `montar(lote, criterio, resposta, indice) -> (sistema, usuario)`: enunciado, critério com níveis e descritores, e resposta entre `<<<` e `>>>`;
   - `esquema(criterio) -> dict`, conforme `contracts/llm-saida.schema.json`, com o enum dos códigos do critério mais `SEM_EVIDENCIA`.
-- [ ] T035 [P] [US1] Implementar `backend/src/avaliacao/ancora.py` como funções puras, conforme research R5: `normalizar_com_mapa(texto) -> (normalizado, mapa)` e `localizar(texto, trecho) -> (inicio, fim) | None`, com mínimo de 3 palavras e reticências rejeitadas
-- [ ] T036 [P] [US1] Implementar `backend/src/avaliacao/validacao.py` como função pura `validar(texto_resposta, json_bruto, codigos_validos) -> ResultadoValidacao(valida, motivo_invalidez, nivel_codigo, justificativa, trechos[(texto_citado, localizado, inicio, fim)])`, com as regras de R5 e os motivos de data-model.md
-- [ ] T037 [P] [US1] Implementar `backend/src/avaliacao/sementes.py`: `semente(semente_base, resposta_id, criterio_id, indice)` = `int(sha256(f"{semente_base}:{resposta_id}:{criterio_id}:{indice}").hexdigest(), 16) % 2**31` (research R3)
-- [ ] T038 [P] [US1] Implementar `backend/src/avaliacao/estimativa.py` (research R7):
+- [X] T035 [P] [US1] Implementar `backend/src/avaliacao/ancora.py` como funções puras, conforme research R5: `normalizar_com_mapa(texto) -> (normalizado, mapa)` e `localizar(texto, trecho) -> (inicio, fim) | None`, com mínimo de 3 palavras e reticências rejeitadas
+- [X] T036 [P] [US1] Implementar `backend/src/avaliacao/validacao.py` como função pura `validar(texto_resposta, json_bruto, codigos_validos) -> ResultadoValidacao(valida, motivo_invalidez, nivel_codigo, justificativa, trechos[(texto_citado, localizado, inicio, fim)])`, com as regras de R5 e os motivos de data-model.md
+- [X] T037 [P] [US1] Implementar `backend/src/avaliacao/sementes.py`: `semente(semente_base, resposta_id, criterio_id, indice)` = `int(sha256(f"{semente_base}:{resposta_id}:{criterio_id}:{indice}").hexdigest(), 16) % 2**31` (research R3)
+- [X] T038 [P] [US1] Implementar `backend/src/avaliacao/estimativa.py` (research R7):
   - `n_chamadas` = respostas elegíveis (sem `LONGA` nem `VAZIA`) × critérios × N;
   - tokens de entrada = soma de `len(sistema + usuario) // 4` dos prompts montados;
   - tokens de saída = `TOKENS_SAIDA_ESTIMADOS` por chamada, substituído pela média observada do lote quando houver ≥ 10 execuções concluídas;
   - custo por `precos.custo_usd` na data de hoje.
 
   Devolve o formato de `POST /lotes/{id}/rodadas/estimativa/`.
-- [ ] T039 [US1] Implementar a tarefa Celery `executar_execucao(execucao_id)` em `backend/src/avaliacao/tasks.py`:
+- [X] T039 [US1] Implementar a tarefa Celery `executar_execucao(execucao_id)` em `backend/src/avaliacao/tasks.py`:
   - sai se a execução não estiver `PENDENTE` (idempotência);
   - reserva o custo previsto com `UPDATE ... SET custo_acumulado_usd = custo_acumulado_usd + previsto WHERE custo_acumulado_usd + previsto <= teto_usd`; se nenhuma linha for afetada, marca a rodada `PAUSADA_TETO` e sai deixando `PENDENTE`;
   - marca `EM_ANDAMENTO`, monta o prompt com a semente da execução, chama `get_llm().avaliar`, valida, grava tokens, custo real (ajusta o acumulado pela diferença real − previsto), latência e resposta bruta, e marca `CONCLUIDA`;
   - `autoretry_for=(IAIndisponivel,)`, `retry_backoff=True`, `retry_jitter=True`, `max_retries=6`, `rate_limit=settings.LLM_RATE_LIMIT`;
   - no esgotamento, marca `FALHOU` com `erro` e devolve a reserva;
   - ao final, chama `atualizar_status_rodada`.
-- [ ] T040 [US1] Implementar `backend/src/avaliacao/services.py`:
+- [X] T040 [US1] Implementar `backend/src/avaliacao/services.py`:
   - `criar_rodada(lote, usuario, reaplicacao, confirmar, teto_usd)`:
     - recusa sem `confirmar`;
     - recusa com `codigo="nivel_gratuito"` se o provedor não for `dumb`, o lote não for `sintetico` e `GEMINI_PAID_TIER` não for verdadeiro;
@@ -233,18 +230,18 @@ para copiar e adaptar: `~/Projetos/extenda/`.
     - enfileira as `PENDENTE`.
   - `retomar(rodada, teto_usd=None)`: reenfileira `PENDENTE` e `FALHOU`, zerando `tentativas`.
   - `atualizar_status_rodada(rodada)`: `CONCLUIDA` se não houver pendentes nem falhas; `COM_FALHAS` se não houver pendentes, mas houver falhas.
-- [ ] T041 [US1] Implementar `backend/src/avaliacao/{serializers,views,urls}.py` para `POST /lotes/{id}/rodadas/estimativa/`, `POST /lotes/{id}/rodadas/`, `GET /rodadas/{id}/`, `POST /rodadas/{id}/retomar/` e `GET /respostas/{id}/execucoes/?rodada=`, conforme contracts/api.md, com permissão de dono do lote ou pesquisador
-- [ ] T042 [US1] Criar o comando `backend/src/lotes/management/commands/auditar_identificadores.py <arquivo>`. Ele varre sem acento e sem caixa todas as colunas `CharField`/`TextField` de todos os modelos e os arquivos de log configurados, e imprime ocorrências por tabela/campo e o total. Sai com código 1 se o total for maior que 0 (quickstart V1)
-- [ ] T043 [P] [US1] Criar as páginas de rubrica `frontend/src/pages/Rubricas.tsx` (lista) e `frontend/src/pages/RubricaEditor.tsx` (formulário dinâmico de critérios, com tipo e peso, e de níveis, com rótulo, pontuação e descritor; mínimo de 2 níveis; aviso "esta versão está em uso: salvar cria a versão N+1")
-- [ ] T044 [P] [US1] Criar `frontend/src/pages/LoteNovo.tsx` (título, enunciado, rubrica, parâmetros avançados recolhidos: N, limiar, mínimo de válidas, teto, sintético) e `frontend/src/pages/Importacao.tsx`:
+- [X] T041 [US1] Implementar `backend/src/avaliacao/{serializers,views,urls}.py` para `POST /lotes/{id}/rodadas/estimativa/`, `POST /lotes/{id}/rodadas/`, `GET /rodadas/{id}/`, `POST /rodadas/{id}/retomar/` e `GET /respostas/{id}/execucoes/?rodada=`, conforme contracts/api.md, com permissão de dono do lote ou pesquisador
+- [X] T042 [US1] Criar o comando `backend/src/lotes/management/commands/auditar_identificadores.py <arquivo>`. Ele varre sem acento e sem caixa todas as colunas `CharField`/`TextField` de todos os modelos e os arquivos de log configurados, e imprime ocorrências por tabela/campo e o total. Sai com código 1 se o total for maior que 0 (quickstart V1)
+- [X] T043 [P] [US1] Criar as páginas de rubrica `frontend/src/pages/Rubricas.tsx` (lista) e `frontend/src/pages/RubricaEditor.tsx` (formulário dinâmico de critérios, com tipo e peso, e de níveis, com rótulo, pontuação e descritor; mínimo de 2 níveis; aviso "esta versão está em uso: salvar cria a versão N+1")
+- [X] T044 [P] [US1] Criar `frontend/src/pages/LoteNovo.tsx` (título, enunciado, rubrica, parâmetros avançados recolhidos: N, limiar, mínimo de válidas, teto, sintético) e `frontend/src/pages/Importacao.tsx`:
   - upload e prévia em tabela;
   - seletores "coluna da resposta" e "colunas de identificação";
   - opção de gerar chave;
   - avisos;
   - download automático da chave com o alerta "Guarde este arquivo. Ele não poderá ser gerado de novo."
-- [ ] T045 [US1] Criar `frontend/src/pages/Rodada.tsx`: estimativa (chamadas, custo e teto editável), botão "Confirmar e executar", barra de progresso com consulta a `GET /rodadas/{id}/` a cada 3 s, estados `PAUSADA_TETO` e `COM_FALHAS` com botão "Retomar"
-- [ ] T046 [P] [US1] Criar o componente `frontend/src/components/TextoComDestaques.tsx`. Ele recebe `texto` e `destaques: {inicio, fim, cor, rotulo}[]`, divide o texto em segmentos quando há sobreposição e renderiza `<mark>` com `title`. Teste em `frontend/src/components/TextoComDestaques.test.tsx` (sobreposição, destaques adjacentes, texto sem destaque)
-- [ ] T047 [US1] Criar `frontend/src/pages/RespostaInspecao.tsx`, alimentada por `GET /respostas/{id}/execucoes/`: texto com os trechos das execuções válidas destacados, com uma cor por critério. Para cada critério, lista as execuções com índice, nível, justificativa e, nas inválidas, o motivo
+- [X] T045 [US1] Criar `frontend/src/pages/Rodada.tsx`: estimativa (chamadas, custo e teto editável), botão "Confirmar e executar", barra de progresso com consulta a `GET /rodadas/{id}/` a cada 3 s, estados `PAUSADA_TETO` e `COM_FALHAS` com botão "Retomar"
+- [X] T046 [P] [US1] Criar o componente `frontend/src/components/TextoComDestaques.tsx`. Ele recebe `texto` e `destaques: {inicio, fim, cor, rotulo}[]`, divide o texto em segmentos quando há sobreposição e renderiza `<mark>` com `title`. Teste em `frontend/src/components/TextoComDestaques.test.tsx` (sobreposição, destaques adjacentes, texto sem destaque)
+- [X] T047 [US1] Criar `frontend/src/pages/RespostaInspecao.tsx`, alimentada por `GET /respostas/{id}/execucoes/`: texto com os trechos das execuções válidas destacados, com uma cor por critério. Para cada critério, lista as execuções com índice, nível, justificativa e, nas inválidas, o motivo
 
 **Checkpoint**: US1 funciona sozinha. Quickstart V1, V2 e V3 passam com o dublê
 
@@ -396,7 +393,7 @@ para copiar e adaptar: `~/Projetos/extenda/`.
 - [ ] T076 [P] [US5] Implementar `backend/src/estudos/alocacao.py` como funções puras: `dividir_metades(respostas_com_estado, semente)`, estratificada por divergente ou não; `alocar_participantes(n)`, em rodízio pelas 4 células; `condicao(metade, braco)` (braço 1: A→`SEM_APOIO`, B→`COM_APOIO`; braço 2: o inverso); `blocos(participacao)`, na ordem sem/com ou com/sem
 - [ ] T077 [US5] Implementar `backend/src/estudos/services.py`:
   - `criar_estudo`;
-  - `convidar(estudo, emails)`: cria `Usuario` inativo com papel `DOCENTE` e envia o link de definição de senha, adaptando `~/Projetos/extenda/backend/src/core/convites.py`; em dev, `EMAIL_BACKEND` de console;
+  - `convidar(estudo, emails)`: cria `Usuario` sem senha utilizável com papel `DOCENTE` (ou reaproveita o existente) e envia o link de definição de senha gerado com `PasswordResetTokenGenerator` (rota `POST /api/auth/definir-senha/`); em dev, `EMAIL_BACKEND` de console, e a resposta devolve os links ao pesquisador;
   - `iniciar(estudo)`: aloca as metades e os participantes na ordem de aceite;
   - `minha_tarefa(participacao)`: bloco atual, próxima resposta sem finalização e progresso.
 - [ ] T078 [US5] Implementar `backend/src/estudos/{serializers,views,urls}.py` para as rotas de "Estudos" de contracts/api.md. `POST /estudos/{id}/respostas/{rid}/sessoes/` reutiliza `revisao.services.abrir_sessao` com a `condicao` **imposta** por `alocacao.condicao` e `participacao` preenchida, e usa `sugestao(..., "SEM_APOIO")` para devolver `OCULTO` (FR-025). Permissões: participante só no próprio estudo; pesquisador só nos estudos que criou

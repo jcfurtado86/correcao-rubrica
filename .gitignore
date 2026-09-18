@@ -15,3 +15,13 @@ node_modules/
 __pycache__/
 dist/
 .pytest_cache/
+*.pyc
+.coverage
+htmlcov/
+build/
+*.log
+.DS_Store
+*.swp
+coverage/
+staticfiles/
+e2e/capturas/

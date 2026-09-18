@@ -1,0 +1,17 @@
+# Mesmas versões do Extenda onde o pacote é comum (plan.md, research R1).
+Django==5.2.15
+djangorestframework==3.17.1
+djangorestframework-simplejwt==5.5.1
+drf-spectacular==0.29.0
+django-environ==0.14.0
+psycopg[binary]==3.3.4
+celery==5.6.3
+redis==6.4.0
+google-genai==2.10.0
+gunicorn==23.0.0
+openpyxl==3.1.5
+# Métricas (research R10)
+numpy==2.5.3
+scikit-learn==1.9.1
+statsmodels==0.15.0
+krippendorff==0.8.2
