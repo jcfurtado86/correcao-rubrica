@@ -1,0 +1,17 @@
+# segredos e config local do agente
+.env
+.env.*
+!.env.example
+.claude/settings.local.json
+
+# dados de estudantes (nunca versionar lotes reais)
+data/
+*.sqlite
+*.db
+
+# build/deps
+node_modules/
+.venv/
+__pycache__/
+dist/
+.pytest_cache/
