@@ -20,6 +20,13 @@ class SessaoCorrecao(models.Model):
     )
     resposta = models.ForeignKey("lotes.Resposta", on_delete=models.CASCADE, related_name="sessoes")
     condicao = models.CharField(max_length=9, choices=Condicao.choices, default=Condicao.COM_APOIO)
+    participacao = models.ForeignKey(
+        "estudos.Participacao",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="sessoes",
+    )
     rodada = models.ForeignKey(
         "avaliacao.Rodada", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
@@ -62,6 +69,13 @@ class Decisao(models.Model):
     docente = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="decisoes"
     )
+    participacao = models.ForeignKey(
+        "estudos.Participacao",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="decisoes",
+    )
     criterio = models.ForeignKey("rubricas.Criterio", on_delete=models.PROTECT, related_name="+")
     nivel = models.ForeignKey("rubricas.Nivel", on_delete=models.PROTECT, related_name="+")
     estado_exibido = models.CharField(max_length=13, choices=EstadoExibido.choices)
@@ -82,9 +96,12 @@ class Decisao(models.Model):
         verbose_name = "decisão"
         verbose_name_plural = "decisões"
         constraints = [
+            # nulls_distinct=False: fora de estudo (participacao nula) a restrição
+            # continua valendo; sem isso o Postgres trataria cada NULL como distinto.
             models.UniqueConstraint(
-                fields=["resposta", "criterio", "docente"],
+                fields=["resposta", "criterio", "docente", "participacao"],
                 condition=models.Q(vigente=True),
+                nulls_distinct=False,
                 name="decisao_vigente_unica",
             )
         ]

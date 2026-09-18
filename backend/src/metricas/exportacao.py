@@ -56,7 +56,13 @@ def _participacao_id(obj):
 
 
 def arquivos_do_lote(
-    lote, incluir_texto=False, incluir_motivos=False, metades=None, filtro_estudo=None
+    lote,
+    incluir_texto=False,
+    incluir_motivos=False,
+    metades=None,
+    filtro_estudo=None,
+    participantes_fixos=None,
+    incluir_metricas_lote=True,
 ):
     """Dicionário {nome do arquivo: conteúdo}. `filtro_estudo` restringe sessões e
     decisões às de um estudo (usado na exportação do estudo)."""
@@ -72,6 +78,8 @@ def arquivos_do_lote(
     metades = metades or {}
     docentes = Pseudonimos("D")
     participantes = Pseudonimos("P")
+    if participantes_fixos:
+        participantes.mapa.update(participantes_fixos)
 
     metadados = {
         "lote": {
@@ -242,11 +250,7 @@ def arquivos_do_lote(
         for s in sessoes.order_by("id")
     ]
 
-    metricas = {
-        "limiar": float(lote.limiar_acordo),
-        "por_rodada": {str(r.numero): painel_do_lote(lote, r.numero) for r in rodadas},
-    }
-    return {
+    arquivos = {
         "metadados.json": json.dumps(
             metadados, ensure_ascii=False, indent=1, cls=DjangoJSONEncoder
         ),
@@ -305,8 +309,16 @@ def arquivos_do_lote(
             ],
             linhas_sessoes,
         ),
-        "metricas.json": json.dumps(metricas, ensure_ascii=False, indent=1, cls=DjangoJSONEncoder),
     }
+    if incluir_metricas_lote:
+        metricas = {
+            "limiar": float(lote.limiar_acordo),
+            "por_rodada": {str(r.numero): painel_do_lote(lote, r.numero) for r in rodadas},
+        }
+        arquivos["metricas.json"] = json.dumps(
+            metricas, ensure_ascii=False, indent=1, cls=DjangoJSONEncoder
+        )
+    return arquivos
 
 
 def zipar(arquivos: dict[str, str]) -> bytes:

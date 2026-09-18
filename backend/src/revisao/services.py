@@ -40,9 +40,15 @@ def decisao_json(d: Decisao) -> dict:
     }
 
 
-def abrir_sessao(docente, resposta, condicao=Condicao.COM_APOIO, participacao=None):
-    """Abre a sessão e devolve (sessão, conteúdo para a tela)."""
-    rodada = rodada_de_referencia(resposta.lote) if condicao == Condicao.COM_APOIO else None
+def abrir_sessao(docente, resposta, condicao=Condicao.COM_APOIO, participacao=None, rodada=None):
+    """Abre a sessão e devolve (sessão, conteúdo para a tela).
+
+    No estudo, `rodada` é a rodada fixada no estudo; fora dele, a de referência.
+    """
+    if condicao == Condicao.COM_APOIO:
+        rodada = rodada or rodada_de_referencia(resposta.lote)
+    else:
+        rodada = None
     extras = {"participacao": participacao} if hasattr(SessaoCorrecao, "participacao") else {}
     sessao = SessaoCorrecao.objects.create(
         docente=docente, resposta=resposta, condicao=condicao, rodada=rodada, **extras

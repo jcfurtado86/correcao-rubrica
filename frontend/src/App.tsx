@@ -1,11 +1,15 @@
 import { Navigate, NavLink, Outlet, Route, Routes } from "react-router-dom";
 import { useSessao } from "./services/auth";
+import DefinirSenha from "./pages/DefinirSenha";
+import EstudoDetalhe from "./pages/EstudoDetalhe";
+import Estudos from "./pages/Estudos";
 import Fila from "./pages/Fila";
 import Importacao from "./pages/Importacao";
 import Login from "./pages/Login";
 import Lote from "./pages/Lote";
 import LoteNovo from "./pages/LoteNovo";
 import Painel from "./pages/Painel";
+import Participacao from "./pages/Participacao";
 import Lotes from "./pages/Lotes";
 import Resposta from "./pages/Resposta";
 import RespostaInspecao from "./pages/RespostaInspecao";
@@ -24,7 +28,7 @@ function Protegido() {
         <nav>
           <NavLink to="/rubricas">Rubricas</NavLink>
           <NavLink to="/lotes">Lotes</NavLink>
-          {usuario.papel === "PESQUISADOR" && <NavLink to="/estudos">Estudos</NavLink>}
+          <NavLink to="/estudos">Estudos</NavLink>
         </nav>
         <span className="suave">
           {usuario.nome || usuario.email} · <button className="link" onClick={logout}>sair</button>
@@ -41,6 +45,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/entrar" element={<Login />} />
+      <Route path="/definir-senha/:uid/:token" element={<DefinirSenha />} />
       <Route element={<Protegido />}>
         <Route path="/" element={<Navigate to="/lotes" replace />} />
         <Route path="/rubricas" element={<Rubricas />} />
@@ -55,6 +60,9 @@ export default function App() {
         <Route path="/lotes/:id/painel" element={<Painel />} />
         <Route path="/lotes/:id/respostas/:rid" element={<Resposta />} />
         <Route path="/respostas/:id/execucoes" element={<RespostaInspecao />} />
+        <Route path="/estudos" element={<Estudos />} />
+        <Route path="/estudos/:id" element={<EstudoDetalhe />} />
+        <Route path="/estudos/:id/participar" element={<Participacao />} />
         <Route path="*" element={<p>Página não encontrada.</p>} />
       </Route>
     </Routes>

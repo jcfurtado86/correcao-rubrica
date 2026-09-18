@@ -12,6 +12,8 @@ type Props = {
   caminhoHistorico?: string; // ausente no estudo (participante não vê histórico)
   aoFinalizar?: () => void;
   proxima?: React.ReactNode;
+  // No estudo a próxima resposta só aparece depois de decidir todos os critérios.
+  proximaSoAoFinalizar?: boolean;
 };
 
 const BATIDA_MS = 30_000;
@@ -21,7 +23,14 @@ function trechosDa(s: Sugestao) {
   return (s.alternativas ?? []).flatMap((a) => a.trechos);
 }
 
-export default function PainelDeCorrecao({ criterios, abrirSessao, caminhoHistorico, aoFinalizar, proxima }: Props) {
+export default function PainelDeCorrecao({
+  criterios,
+  abrirSessao,
+  caminhoHistorico,
+  aoFinalizar,
+  proxima,
+  proximaSoAoFinalizar = false,
+}: Props) {
   const [sessao, setSessao] = useState<Sessao | null>(null);
   const [vigentes, setVigentes] = useState<Record<number, DecisaoT>>({});
   const [motivos, setMotivos] = useState<Record<number, string>>({});
@@ -134,9 +143,6 @@ export default function PainelDeCorrecao({ criterios, abrirSessao, caminhoHistor
 
   return (
     <div className="grade">
-      {sessao.condicao === "SEM_APOIO" && (
-        <div className="faixa-bloco SEM_APOIO">Condição sem apoio: corrija sem sugestão da pré-avaliação.</div>
-      )}
       <div className="duas-colunas">
         <div style={{ position: "sticky", top: "1rem" }} className="grade">
           <TextoComDestaques texto={sessao.texto} destaques={destaques} />
@@ -155,7 +161,7 @@ export default function PainelDeCorrecao({ criterios, abrirSessao, caminhoHistor
               {proxima}
             </div>
           )}
-          {!finalizada && proxima}
+          {!finalizada && !proximaSoAoFinalizar && proxima}
           {erro && <p className="erro">{erro}</p>}
         </div>
         <div className="grade">

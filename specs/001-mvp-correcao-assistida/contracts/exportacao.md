@@ -13,7 +13,8 @@ Docentes aparecem como `D01…`, e no estudo como `P01…`.
 | `consolidados.csv` | rodada × resposta × critério | `rodada, codigo, criterio, estado, modal_codigo, nivel_modal_ordem, acordo, n_validas, distribuicao_json, limiar_usado` |
 | `decisoes.csv` | decisão (vigentes e substituídas) | `decisao_id, docente, dono_do_lote, participante, codigo, criterio, condicao, estado_exibido, nivel_sugerido_ordem, nivel_decidido_ordem, tipo, tem_motivo, tempo_ativo_ms, vigente, substitui, instante` |
 | `sessoes.csv` | sessão | `sessao_id, docente, dono_do_lote, participante, codigo, condicao, rodada, tempo_ativo_ms, n_decisoes, aberta_em` |
-| `alocacao.csv` | só estudo | `participante, braco, ordem` e `codigo, metade` |
+| `alocacao.csv` | só estudo: participante | `participante, braco, ordem` (a metade de cada resposta está em `respostas.csv`) |
+| `metricas_estudo.json` | só estudo | o painel do estudo sem e-mails; no lugar de `metricas.json` |
 | `metricas.json` | — | `{limiar, por_rodada: {"1": painel, "2": painel}}`: os mesmos números do painel, para conferência automática com o script |
 
 Convenções: `criterio` é a posição do critério na rubrica (1..k) e os níveis entram pela

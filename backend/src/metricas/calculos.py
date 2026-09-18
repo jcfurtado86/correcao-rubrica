@@ -113,6 +113,10 @@ def krippendorff_ordinal(dados: list[list[float]]) -> float | None:
     valores = matriz[~np.isnan(matriz)]
     if matriz.ndim != 2 or matriz.shape[0] < 2 or len(np.unique(valores)) < 2:
         return None
+    # Indefinido sem ao menos um item avaliado por dois avaliadores (a biblioteca
+    # levanta erro nesse caso; aqui é "sem dado", como as demais métricas).
+    if not ((~np.isnan(matriz)).sum(axis=0) >= 2).any():
+        return None
     import krippendorff
 
     with warnings.catch_warnings():

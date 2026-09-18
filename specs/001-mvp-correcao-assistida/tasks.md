@@ -372,8 +372,8 @@ para copiar e adaptar: `~/Projetos/extenda/`.
 
 ### Tests for User Story 5 ⚠️
 
-- [ ] T073 [P] [US5] Escrever `backend/tests/unit/test_alocacao.py`: metades de tamanho igual (±1) e proporção de divergentes parecida (diferença ≤ 1 resposta por estrato); alocação determinística com a mesma semente; 8 participantes → 2 por célula (braço × ordem); `condicao(metade, braco)` com a tabela completa
-- [ ] T074 [P] [US5] Escrever `backend/tests/integration/test_estudo.py`, cobrindo:
+- [X] T073 [P] [US5] Escrever `backend/tests/unit/test_alocacao.py`: metades de tamanho igual (±1) e proporção de divergentes parecida (diferença ≤ 1 resposta por estrato); alocação determinística com a mesma semente; 8 participantes → 2 por célula (braço × ordem); `condicao(metade, braco)` com a tabela completa
+- [X] T074 [P] [US5] Escrever `backend/tests/integration/test_estudo.py`, cobrindo:
   - só PESQUISADOR cria estudo;
   - a rodada precisa estar `CONCLUIDA`;
   - depois de `iniciar`, não entra participante novo;
@@ -384,22 +384,22 @@ para copiar e adaptar: `~/Projetos/extenda/`.
 
 ### Implementation for User Story 5
 
-- [ ] T075 [US5] Criar os modelos em `backend/src/estudos/models.py`:
+- [X] T075 [US5] Criar os modelos em `backend/src/estudos/models.py`:
   - `Estudo(pesquisador, titulo, lote, rodada, semente_alocacao, status PREPARACAO|EM_ANDAMENTO|ENCERRADO)`;
   - `AlocacaoResposta(estudo, resposta, metade A|B)` com `UniqueConstraint(estudo, resposta)`;
   - `Participacao(estudo, docente, posicao, braco 1|2, ordem SEM_PRIMEIRO|COM_PRIMEIRO, concluida_em)` com `UniqueConstraint(estudo, docente)`.
 
   Adicionar por migração `participacao` (FK null) a `SessaoCorrecao` e `Decisao` em `backend/src/revisao/models.py`, e incluir `participacao` na constraint de vigência.
-- [ ] T076 [P] [US5] Implementar `backend/src/estudos/alocacao.py` como funções puras: `dividir_metades(respostas_com_estado, semente)`, estratificada por divergente ou não; `alocar_participantes(n)`, em rodízio pelas 4 células; `condicao(metade, braco)` (braço 1: A→`SEM_APOIO`, B→`COM_APOIO`; braço 2: o inverso); `blocos(participacao)`, na ordem sem/com ou com/sem
-- [ ] T077 [US5] Implementar `backend/src/estudos/services.py`:
+- [X] T076 [P] [US5] Implementar `backend/src/estudos/alocacao.py` como funções puras: `dividir_metades(respostas_com_estado, semente)`, estratificada por divergente ou não; `alocar_participantes(n)`, em rodízio pelas 4 células; `condicao(metade, braco)` (braço 1: A→`SEM_APOIO`, B→`COM_APOIO`; braço 2: o inverso); `blocos(participacao)`, na ordem sem/com ou com/sem
+- [X] T077 [US5] Implementar `backend/src/estudos/services.py`:
   - `criar_estudo`;
   - `convidar(estudo, emails)`: cria `Usuario` sem senha utilizável com papel `DOCENTE` (ou reaproveita o existente) e envia o link de definição de senha gerado com `PasswordResetTokenGenerator` (rota `POST /api/auth/definir-senha/`); em dev, `EMAIL_BACKEND` de console, e a resposta devolve os links ao pesquisador;
   - `iniciar(estudo)`: aloca as metades e os participantes na ordem de aceite;
   - `minha_tarefa(participacao)`: bloco atual, próxima resposta sem finalização e progresso.
-- [ ] T078 [US5] Implementar `backend/src/estudos/{serializers,views,urls}.py` para as rotas de "Estudos" de contracts/api.md. `POST /estudos/{id}/respostas/{rid}/sessoes/` reutiliza `revisao.services.abrir_sessao` com a `condicao` **imposta** por `alocacao.condicao` e `participacao` preenchida, e usa `sugestao(..., "SEM_APOIO")` para devolver `OCULTO` (FR-025). Permissões: participante só no próprio estudo; pesquisador só nos estudos que criou
-- [ ] T079 [US5] Estender `backend/src/metricas/painel.py` e `exportacao.py` para o estudo: concordância da IA com decisões cegas e com assistidas, ancoragem, α de Krippendorff entre cegos (referência humana), mediana de tempo por condição e por participante, e `alocacao.csv`, com os participantes como `P01…`. Criar as rotas `GET /estudos/{id}/painel/` e `GET /estudos/{id}/exportacao.zip`
-- [ ] T080 [P] [US5] Criar `frontend/src/pages/Estudos.tsx` e `frontend/src/pages/EstudoDetalhe.tsx` (pesquisador): criar a partir de lote e rodada; colar a lista de e-mails para convite; "Iniciar" com resumo da alocação; progresso por participante; painel e exportação do estudo
-- [ ] T081 [US5] Criar `frontend/src/pages/Participacao.tsx` (participante): faixa fixa com o bloco atual ("Bloco 1 de 2: sem apoio" / "com apoio"), reutilizando `Resposta.tsx` em modo estudo (sem painel de execuções, sem histórico de outros e sem acesso a outras telas) e avançando pelo `minha-tarefa`
+- [X] T078 [US5] Implementar `backend/src/estudos/{serializers,views,urls}.py` para as rotas de "Estudos" de contracts/api.md. `POST /estudos/{id}/respostas/{rid}/sessoes/` reutiliza `revisao.services.abrir_sessao` com a `condicao` **imposta** por `alocacao.condicao` e `participacao` preenchida, e usa `sugestao(..., "SEM_APOIO")` para devolver `OCULTO` (FR-025). Permissões: participante só no próprio estudo; pesquisador só nos estudos que criou
+- [X] T079 [US5] Estender `backend/src/metricas/painel.py` e `exportacao.py` para o estudo: concordância da IA com decisões cegas e com assistidas, ancoragem, α de Krippendorff entre cegos (referência humana), mediana de tempo por condição e por participante, e `alocacao.csv`, com os participantes como `P01…`. Criar as rotas `GET /estudos/{id}/painel/` e `GET /estudos/{id}/exportacao.zip`
+- [X] T080 [P] [US5] Criar `frontend/src/pages/Estudos.tsx` e `frontend/src/pages/EstudoDetalhe.tsx` (pesquisador): criar a partir de lote e rodada; colar a lista de e-mails para convite; "Iniciar" com resumo da alocação; progresso por participante; painel e exportação do estudo
+- [X] T081 [US5] Criar `frontend/src/pages/Participacao.tsx` (participante): faixa fixa com o bloco atual ("Bloco 1 de 2: sem apoio" / "com apoio"), reutilizando `Resposta.tsx` em modo estudo (sem painel de execuções, sem histórico de outros e sem acesso a outras telas) e avançando pelo `minha-tarefa`
 
 **Checkpoint**: quickstart V8 passa. O estudo com docentes pode ser agendado
 

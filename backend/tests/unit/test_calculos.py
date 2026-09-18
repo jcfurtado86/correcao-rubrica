@@ -74,6 +74,8 @@ def test_krippendorff_ordinal():
     esperado = krippendorff.alpha(reliability_data=com_falta, level_of_measurement="ordinal")
     assert c.krippendorff_ordinal(com_falta) == pytest.approx(esperado)
     assert c.krippendorff_ordinal([[1, 1], [1, 1]]) is None
+    # nenhum item com dois avaliadores (estudo no começo): indefinido, sem erro
+    assert c.krippendorff_ordinal([[1, math.nan], [math.nan, 3]]) is None
 
 
 def test_estabilidade_entre_rodadas():

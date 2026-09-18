@@ -83,10 +83,14 @@ criou.
 
 | Método e rota | Corpo / resposta | Regras |
 |---|---|---|
-| `POST /estudos/` | `{titulo, lote, rodada}` | só PESQUISADOR. A rodada precisa estar `CONCLUIDA` |
-| `POST /estudos/{id}/convites/` | `{emails:[...]}` → `{convites:[{email, link}]}` | cria a conta (ou reaproveita) e gera link de definição de senha (`POST /api/auth/definir-senha/`) |
-| `POST /estudos/{id}/iniciar/` | → `{metade_A: n, metade_B: n, participantes:[{docente, braco, ordem}]}` | aloca metades e braços (R12). Depois disso não entram novos participantes |
-| `GET /estudos/{id}/minha-tarefa/` | `{bloco_atual: {metade, condicao}, proxima_resposta, progresso}` | para o participante |
-| `POST /estudos/{id}/respostas/{rid}/sessoes/` | igual à sessão normal, com `condicao` imposta pela alocação | aplica `OCULTO` no servidor |
-| `GET /estudos/{id}/painel/` | métricas do lote + referência humana, ancoragem e tempo por condição | |
-| `GET /estudos/{id}/exportacao.zip` | idem, com `participante` pseudônimo (`P01`…) | |
+| `GET /estudos/` | `[{id, titulo, status, papel: PESQUISADOR\|PARTICIPANTE, lote, lote_titulo, rodada, n_participantes}]` | estudos criados pelo usuário e estudos de que participa |
+| `POST /estudos/` | `{titulo, lote, rodada}` | só PESQUISADOR (403), dono do lote. A rodada precisa estar `CONCLUIDA` (`rodada_nao_concluida`) |
+| `POST /estudos/{id}/convites/` | `{emails:[...]}` → `{convites:[{email, link, posicao}]}` | cria a conta sem senha (ou reaproveita) e gera o link de definição de senha. `link` é nulo se a conta já tem senha. Recusa com `estudo_iniciado` depois de iniciar |
+| `POST /auth/definir-senha/` | `{uid, token, senha}` → `{email}` | anônimo. O link vale uma vez (o token muda com a senha). Senha passa pelos validadores do Django |
+| `POST /estudos/{id}/iniciar/` | → `{metade_A, metade_B, participantes:[{posicao, docente, braco, ordem}]}` | aloca as metades (só respostas elegíveis, sem vazias nem longas) e os braços (R12) |
+| `POST /estudos/{id}/encerrar/` | → `{status}` | |
+| `GET /estudos/{id}/criterios/` | critérios e níveis da rubrica do lote comum | participante ou pesquisador do estudo |
+| `GET /estudos/{id}/minha-tarefa/` | `{iniciado, concluido, bloco_atual: {numero, de, metade, condicao}, proxima_resposta: {id, codigo}, progresso:[{bloco, condicao, feitas, total}]}` | para o participante. A ordem dentro do bloco é embaralhada por participante |
+| `POST /estudos/{id}/respostas/{rid}/sessoes/` | igual à sessão normal | `condicao` imposta pela alocação e rodada do estudo. Em `SEM_APOIO`, cada critério sai só como `{criterio, estado: "OCULTO"}` |
+| `GET /estudos/{id}/painel/` | `{cegos, assistidos, ancoragem, referencia_humana, tempo, participantes}` | só o pesquisador (participante recebe 403) |
+| `GET /estudos/{id}/exportacao.zip` | arquivos do lote restritos ao estudo + `alocacao.csv` + `metricas_estudo.json` | participantes `P01…` na ordem do convite |

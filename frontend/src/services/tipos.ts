@@ -227,3 +227,49 @@ export type Painel = {
   por_tipo: Record<TipoCriterio, { n_pares: number; taxa_divergencia: number | null; taxa_nao_convergente: number | null; exata: number | null }>;
   tempo: { n_respostas: number; mediana_ms: number | null; media_ms: number | null };
 };
+
+export type EstudoResumo = {
+  id: number;
+  titulo: string;
+  status: "PREPARACAO" | "EM_ANDAMENTO" | "ENCERRADO";
+  papel: "PESQUISADOR" | "PARTICIPANTE";
+  lote: number;
+  lote_titulo: string;
+  rodada: number;
+  n_participantes: number;
+};
+export type Tarefa = {
+  iniciado: boolean;
+  concluido: boolean;
+  bloco_atual: { numero: number; de: number; metade: string; condicao: Condicao } | null;
+  proxima_resposta: { id: number; codigo: string } | null;
+  progresso?: { bloco: number; condicao: Condicao; feitas: number; total: number }[];
+};
+export type ResumoCondicao = Concordancia & {
+  seletiva: BlocoPainel["seletiva"];
+};
+export type PainelEstudo = {
+  status: string;
+  rodada: number;
+  cegos: ResumoCondicao;
+  assistidos: ResumoCondicao;
+  ancoragem: { exata: number | null; exata_convergentes: number | null };
+  referencia_humana: Record<"cegos" | "assistidos", { alfa: number | null; avaliadores: number; itens: number }>;
+  tempo: {
+    SEM_APOIO: { n: number; mediana_ms: number | null; media_ms: number | null };
+    COM_APOIO: { n: number; mediana_ms: number | null; media_ms: number | null };
+    diferenca_pareada_mediana_ms: number | null;
+    n_pareados: number;
+  };
+  participantes: {
+    participante: string;
+    email?: string;
+    braco: number | null;
+    ordem: string;
+    progresso: { bloco: number; condicao: Condicao; feitas: number; total: number }[];
+    concluida: boolean;
+    mediana_sem_apoio_ms: number | null;
+    mediana_com_apoio_ms: number | null;
+  }[];
+};
+export const ROTULO_CONDICAO: Record<Condicao, string> = { SEM_APOIO: "sem apoio", COM_APOIO: "com apoio" };
