@@ -10,6 +10,7 @@ from core.permissions import pode_ver_lote
 from lotes.importacao import importar, previa
 from lotes.models import Lote
 from lotes.serializers import LoteEntrada, LoteResumo, RespostaResumo
+from rubricas.serializers import CriterioSaida
 
 
 def lote_do_dono(request, pk) -> Lote:
@@ -36,6 +37,7 @@ def detalhe(lote: Lote) -> dict:
         {
             "avisos": avisos,
             "versao": {"id": versao.id, "numero": versao.numero, "rubrica": versao.rubrica_id},
+            "criterios": CriterioSaida(versao.criterios.prefetch_related("niveis"), many=True).data,
             "rodadas": [
                 {"id": r.id, "numero": r.numero, "status": r.status, "modelo": r.modelo}
                 for r in lote.rodadas.order_by("numero")

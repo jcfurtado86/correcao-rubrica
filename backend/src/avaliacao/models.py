@@ -118,3 +118,43 @@ class Trecho(models.Model):
 
     def __str__(self):
         return self.texto_citado[:60]
+
+
+class Consolidado(models.Model):
+    """Resultado de um par (resposta, critério) numa rodada. Recalculável (R6)."""
+
+    class Estado(models.TextChoices):
+        CONVERGENTE = "CONVERGENTE", "Convergente"
+        DIVERGENTE = "DIVERGENTE", "Divergente"
+        SEM_EVIDENCIA = "SEM_EVIDENCIA", "Sem evidência"
+        INDETERMINADO = "INDETERMINADO", "Indeterminado"
+
+    rodada = models.ForeignKey(Rodada, on_delete=models.CASCADE, related_name="consolidados")
+    resposta = models.ForeignKey(
+        "lotes.Resposta", on_delete=models.CASCADE, related_name="consolidados"
+    )
+    criterio = models.ForeignKey(
+        "rubricas.Criterio", on_delete=models.PROTECT, related_name="consolidados"
+    )
+    estado = models.CharField(max_length=13, choices=Estado.choices)
+    modal_codigo = models.CharField(max_length=16, blank=True)
+    nivel_modal = models.ForeignKey(
+        "rubricas.Nivel", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    acordo = models.DecimalField(max_digits=4, decimal_places=3)
+    n_validas = models.PositiveSmallIntegerField()
+    distribuicao = models.JSONField(default=dict)
+    limiar_usado = models.DecimalField(max_digits=3, decimal_places=2)
+    min_validas_usado = models.PositiveSmallIntegerField()
+    calculado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["rodada", "resposta", "criterio"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["rodada", "resposta", "criterio"], name="consolidado_unico"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.resposta} · {self.criterio}: {self.estado}"

@@ -14,13 +14,14 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Max, Q, prefetch_related_objects
 from django.utils import timezone
 
 from avaliacao import prompt
+from avaliacao.consolidacao import consolidar
 from avaliacao.estimativa import estimar
-from avaliacao.models import Execucao, Rodada, Trecho
+from avaliacao.models import Consolidado, Execucao, Rodada, Trecho
 from avaliacao.sementes import semente
 from avaliacao.validacao import SEM_EVIDENCIA, validar
 from conectores.llm import ErroLLM, IAIndisponivel, get_llm
@@ -31,6 +32,12 @@ from rubricas.services import congelar
 
 OK, RETENTAR, FALHOU, PULAR, PAUSADA = "OK", "RETENTAR", "FALHOU", "PULAR", "PAUSADA"
 FINALIZADAS = (Rodada.Status.CONCLUIDA, Rodada.Status.COM_FALHAS)
+
+
+def rodada_de_referencia(lote: Lote) -> Rodada | None:
+    """A rodada cujas sugestões são mostradas: a última finalizada (ou a última)."""
+    rodadas = lote.rodadas.order_by("-numero")
+    return rodadas.filter(status__in=FINALIZADAS).first() or rodadas.first()
 
 
 def exigir_nivel_pago(lote: Lote) -> None:
@@ -131,11 +138,77 @@ def criar_rodada(
 
 
 def _apos_criar_execucoes(rodada: Rodada) -> None:
-    """Gancho para a consolidação dos pares que já nascem concluídos (US2)."""
+    """Consolida os pares que já nascem concluídos (respostas vazias)."""
+    pares = (
+        rodada.execucoes.filter(resposta__aviso=Resposta.Aviso.VAZIA)
+        .values_list("resposta_id", "criterio_id")
+        .distinct()
+    )
+    for resposta_id, criterio_id in pares:
+        recalcular_consolidado(rodada, resposta_id, criterio_id)
 
 
 def _apos_concluir(execucao: Execucao) -> None:
-    """Gancho para a consolidação quando o par termina (US2)."""
+    recalcular_consolidado(execucao.rodada, execucao.resposta_id, execucao.criterio_id)
+
+
+def recalcular_consolidado(rodada: Rodada, resposta_id: int, criterio_id: int):
+    """Consolida o par se todas as execuções dele saíram da fila (FR-014).
+
+    Cada worker verifica depois de gravar a própria execução: o último a
+    terminar sempre enxerga as demais concluídas e consolida.
+    """
+    execucoes = Execucao.objects.filter(
+        rodada=rodada, resposta_id=resposta_id, criterio_id=criterio_id
+    )
+    if execucoes.filter(
+        status__in=[Execucao.Status.PENDENTE, Execucao.Status.EM_ANDAMENTO]
+    ).exists():
+        return None
+    lote = rodada.lote
+    votos = list(
+        execucoes.filter(status=Execucao.Status.CONCLUIDA, valida=True).values_list(
+            "indice", "nivel_codigo"
+        )
+    )
+    r = consolidar(votos, lote.limiar_acordo, lote.min_validas)
+    nivel_modal = (
+        Execucao.objects.filter(
+            rodada=rodada,
+            resposta_id=resposta_id,
+            criterio_id=criterio_id,
+            nivel_codigo=r.modal,
+            nivel__isnull=False,
+        )
+        .values_list("nivel_id", flat=True)
+        .first()
+        if r.modal
+        else None
+    )
+    campos = {
+        "estado": r.estado,
+        "modal_codigo": r.modal or "",
+        "nivel_modal_id": nivel_modal,
+        "acordo": r.acordo,
+        "n_validas": r.n_validas,
+        "distribuicao": r.distribuicao,
+        "limiar_usado": lote.limiar_acordo,
+        "min_validas_usado": lote.min_validas,
+    }
+    chave = {"rodada": rodada, "resposta_id": resposta_id, "criterio_id": criterio_id}
+    try:
+        with transaction.atomic():
+            consolidado, _ = Consolidado.objects.update_or_create(**chave, defaults=campos)
+    except IntegrityError:
+        # Dois workers consolidando o mesmo par ao mesmo tempo: o segundo atualiza.
+        Consolidado.objects.filter(**chave).update(**campos)
+        consolidado = Consolidado.objects.get(**chave)
+    return consolidado
+
+
+def recalcular_rodada(rodada: Rodada) -> int:
+    pares = rodada.execucoes.values_list("resposta_id", "criterio_id").distinct()
+    return sum(1 for r, c in pares if recalcular_consolidado(rodada, r, c) is not None)
 
 
 def _limite_de_abandono():
@@ -257,6 +330,7 @@ def processar_execucao(execucao_id: int, tentativa: int = 0) -> str:
             return RETENTAR
         execucao.status = Execucao.Status.FALHOU
         execucao.save(update_fields=["status", "erro"])
+        _apos_concluir(execucao)
         atualizar_status_rodada(rodada)
         return FALHOU
 

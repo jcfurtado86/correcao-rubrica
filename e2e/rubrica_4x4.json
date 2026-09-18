@@ -1,0 +1,118 @@
+{
+ "titulo": "Verificação e validação (e2e)",
+ "descricao": "",
+ "criterios": [
+  {
+   "nome": "Conceituação",
+   "descricao": "Critério Conceituação",
+   "peso": "1",
+   "tipo": "OBJETIVO",
+   "niveis": [
+    {
+     "rotulo": "Insuficiente",
+     "pontuacao": "0",
+     "descritor": "Não atende."
+    },
+    {
+     "rotulo": "Parcial",
+     "pontuacao": "1",
+     "descritor": "Atende em parte."
+    },
+    {
+     "rotulo": "Adequado",
+     "pontuacao": "2",
+     "descritor": "Atende."
+    },
+    {
+     "rotulo": "Excelente",
+     "pontuacao": "3",
+     "descritor": "Atende com precisão."
+    }
+   ]
+  },
+  {
+   "nome": "Distinção",
+   "descricao": "Critério Distinção",
+   "peso": "1",
+   "tipo": "OBJETIVO",
+   "niveis": [
+    {
+     "rotulo": "Insuficiente",
+     "pontuacao": "0",
+     "descritor": "Não atende."
+    },
+    {
+     "rotulo": "Parcial",
+     "pontuacao": "1",
+     "descritor": "Atende em parte."
+    },
+    {
+     "rotulo": "Adequado",
+     "pontuacao": "2",
+     "descritor": "Atende."
+    },
+    {
+     "rotulo": "Excelente",
+     "pontuacao": "3",
+     "descritor": "Atende com precisão."
+    }
+   ]
+  },
+  {
+   "nome": "Exemplificação",
+   "descricao": "Critério Exemplificação",
+   "peso": "1",
+   "tipo": "INTERPRETATIVO",
+   "niveis": [
+    {
+     "rotulo": "Insuficiente",
+     "pontuacao": "0",
+     "descritor": "Não atende."
+    },
+    {
+     "rotulo": "Parcial",
+     "pontuacao": "1",
+     "descritor": "Atende em parte."
+    },
+    {
+     "rotulo": "Adequado",
+     "pontuacao": "2",
+     "descritor": "Atende."
+    },
+    {
+     "rotulo": "Excelente",
+     "pontuacao": "3",
+     "descritor": "Atende com precisão."
+    }
+   ]
+  },
+  {
+   "nome": "Clareza",
+   "descricao": "Critério Clareza",
+   "peso": "1",
+   "tipo": "INTERPRETATIVO",
+   "niveis": [
+    {
+     "rotulo": "Insuficiente",
+     "pontuacao": "0",
+     "descritor": "Não atende."
+    },
+    {
+     "rotulo": "Parcial",
+     "pontuacao": "1",
+     "descritor": "Atende em parte."
+    },
+    {
+     "rotulo": "Adequado",
+     "pontuacao": "2",
+     "descritor": "Atende."
+    },
+    {
+     "rotulo": "Excelente",
+     "pontuacao": "3",
+     "descritor": "Atende com precisão."
+    }
+   ]
+  }
+ ]
+}

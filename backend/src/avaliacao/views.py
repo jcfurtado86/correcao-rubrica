@@ -7,7 +7,8 @@ from rest_framework.views import APIView
 
 from avaliacao.estimativa import estimar
 from avaliacao.models import Execucao, Rodada
-from avaliacao.services import criar_rodada, progresso, retomar
+from avaliacao.services import criar_rodada, progresso, retomar, rodada_de_referencia
+from avaliacao.sugestao import sugestoes_da_resposta
 from core.exceptions import ErroDeNegocio
 from core.permissions import pode_ver_lote
 from lotes.models import Resposta
@@ -144,5 +145,29 @@ class ExecucoesDaRespostaView(APIView):
                 "aviso": resposta.aviso,
                 "rodada": rodada.numero if rodada else None,
                 "criterios": criterios,
+            }
+        )
+
+
+class SugestoesDaRespostaView(APIView):
+    """Sugestões consolidadas de uma resposta (dono do lote ou pesquisador).
+
+    O participante de estudo nunca passa por aqui: ele recebe as sugestões pela
+    sessão do estudo, que aplica a condição com ou sem apoio no servidor.
+    """
+
+    def get(self, request, pk):
+        resposta = get_object_or_404(Resposta.objects.select_related("lote"), pk=pk)
+        if not pode_ver_lote(request.user, resposta.lote):
+            raise ErroDeNegocio("Não encontrado.", codigo="nao_encontrado", status_code=404)
+        rodada = rodada_de_referencia(resposta.lote)
+        return Response(
+            {
+                "id": resposta.id,
+                "codigo": resposta.codigo,
+                "texto": resposta.texto,
+                "aviso": resposta.aviso,
+                "rodada": rodada.numero if rodada else None,
+                "criterios": sugestoes_da_resposta(resposta, rodada),
             }
         )

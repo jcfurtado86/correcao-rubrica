@@ -1,6 +1,6 @@
 # Contrato da API REST
 
-Base `/api/`, JSON, autenticação como no Extenda (allauth headless + JWT). O OpenAPI completo é
+Base `/api/`, JSON, autenticação JWT (simplejwt; login por e-mail em `/api/auth/token/`). O OpenAPI completo é
 gerado pelo drf-spectacular em `/api/schema/`. Este arquivo fixa o comportamento que os testes
 de contrato verificam. Erros seguem `{"detail": "...", "codigo": "..."}`.
 
@@ -43,7 +43,8 @@ criou.
 
 | Método e rota | Corpo / resposta | Regras |
 |---|---|---|
-| `GET /lotes/{id}/fila/` | `[{resposta, codigo, estado_pior, n_decididos, n_criterios}]` | ordem do FR-016, depois por código |
+| `GET /lotes/{id}/fila/` | `{rodada, contagem: {estado: n}, respostas: [{resposta, codigo, estado_pior, estados, n_decididos, n_criterios, finalizada}]}` | ordem do FR-016 (não convergentes primeiro), depois por código. `INDISPONIVEL` (resposta sem pré-avaliação, ex.: longa) conta como não convergente |
+| `GET /respostas/{id}/sugestoes/` | `{id, codigo, texto, aviso, rodada, criterios: [Sugestao]}` | leitura das sugestões consolidadas, só para o dono do lote ou o pesquisador. O participante de estudo recebe sugestões só pela sessão do estudo |
 | `POST /respostas/{id}/sessoes/` | → `{sessao, texto, condicao, criterios:[Sugestao], decisoes_vigentes:[...]}` | abre uma sessão |
 | `POST /sessoes/{id}/decisoes/` | `{criterio, nivel, motivo?, tempo_ativo_ms}` → decisão | uma por chamada. Substitui a vigente anterior (histórico) |
 | `PATCH /sessoes/{id}/` | `{tempo_ativo_ms}` | batida periódica. Sessão sem decisão não entra na métrica |
@@ -63,7 +64,9 @@ criou.
   "alternativas": [{"nivel": {"codigo": "N3"}, "votos": 3, "justificativa": "…", "trechos": [...]},
                    {"nivel": {"codigo": "N4"}, "votos": 2, "justificativa": "…", "trechos": [...]}] }
 
-// COM_APOIO, SEM_EVIDENCIA / INDETERMINADO: sem nivel_sugerido, com justificativa quando houver
+// COM_APOIO, SEM_EVIDENCIA: sem nivel_sugerido, com a justificativa
+// COM_APOIO, INDETERMINADO: sem nivel_sugerido, com as alternativas que houver
+// Sem consolidado (resposta longa, rodada em curso): { "criterio": 12, "estado": "INDISPONIVEL", "nivel_sugerido": null }
 
 // SEM_APOIO (estudo): nenhum outro campo sai do servidor
 { "criterio": 12, "estado": "OCULTO" }
@@ -81,7 +84,7 @@ criou.
 | Método e rota | Corpo / resposta | Regras |
 |---|---|---|
 | `POST /estudos/` | `{titulo, lote, rodada}` | só PESQUISADOR. A rodada precisa estar `CONCLUIDA` |
-| `POST /estudos/{id}/convites/` | `{emails:[...]}` | cria conta por convite (allauth) |
+| `POST /estudos/{id}/convites/` | `{emails:[...]}` → `{convites:[{email, link}]}` | cria a conta (ou reaproveita) e gera link de definição de senha (`POST /api/auth/definir-senha/`) |
 | `POST /estudos/{id}/iniciar/` | → `{metade_A: n, metade_B: n, participantes:[{docente, braco, ordem}]}` | aloca metades e braços (R12). Depois disso não entram novos participantes |
 | `GET /estudos/{id}/minha-tarefa/` | `{bloco_atual: {metade, condicao}, proxima_resposta, progresso}` | para o participante |
 | `POST /estudos/{id}/respostas/{rid}/sessoes/` | igual à sessão normal, com `condicao` imposta pela alocação | aplica `OCULTO` no servidor |

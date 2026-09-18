@@ -44,3 +44,20 @@ class ExecucaoAdmin(SoLeitura):
     )
     list_filter = ("rodada", "status", "valida", "motivo_invalidez")
     inlines = [TrechoInline]
+
+
+from avaliacao.models import Consolidado  # noqa: E402
+
+
+@admin.register(Consolidado)
+class ConsolidadoAdmin(SoLeitura):
+    list_display = (
+        "resposta",
+        "criterio",
+        "rodada",
+        "estado",
+        "modal_codigo",
+        "acordo",
+        "n_validas",
+    )
+    list_filter = ("rodada", "estado")

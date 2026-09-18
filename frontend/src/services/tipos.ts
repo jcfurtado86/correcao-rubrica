@@ -40,6 +40,7 @@ export type Lote = {
   n_respostas: number;
   avisos?: Record<string, number>;
   versao?: { id: number; numero: number; rubrica: number };
+  criterios?: Criterio[];
   rodadas?: RodadaResumo[];
 };
 
@@ -116,3 +117,47 @@ export const ROTULO_MOTIVO: Record<string, string> = {
 export function usd(valor: number): string {
   return `US$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
 }
+
+export type EstadoSugestao = "CONVERGENTE" | "DIVERGENTE" | "SEM_EVIDENCIA" | "INDETERMINADO" | "INDISPONIVEL" | "OCULTO";
+export type NivelSugerido = { id: number | null; codigo: string; rotulo: string; ordem: number | null };
+export type TrechoSugestao = { inicio: number; fim: number; texto: string };
+export type Alternativa = { nivel: NivelSugerido; votos: number; justificativa: string; trechos: TrechoSugestao[] };
+export type Sugestao = {
+  criterio: number;
+  estado: EstadoSugestao;
+  nivel_sugerido?: NivelSugerido | null;
+  acordo?: { votos: number; validas: number };
+  justificativa?: string;
+  trechos?: TrechoSugestao[];
+  alternativas?: Alternativa[];
+};
+export type SugestoesDaResposta = { id: number; codigo: string; texto: string; aviso: string | null; rodada: number | null; criterios: Sugestao[] };
+
+export type ItemFila = {
+  resposta: number;
+  codigo: string;
+  estado_pior: EstadoSugestao;
+  estados: Partial<Record<EstadoSugestao, number>>;
+  n_decididos: number;
+  n_criterios: number;
+  finalizada: boolean;
+};
+export type Fila = { rodada: number | null; contagem: Partial<Record<EstadoSugestao, number>>; respostas: ItemFila[] };
+
+export const ROTULO_ESTADO: Record<EstadoSugestao, string> = {
+  CONVERGENTE: "Convergente",
+  DIVERGENTE: "Divergente",
+  SEM_EVIDENCIA: "Sem evidência",
+  INDETERMINADO: "Indeterminado",
+  INDISPONIVEL: "Sem pré-avaliação",
+  OCULTO: "Sem apoio",
+};
+
+export const EXPLICACAO_ESTADO: Record<EstadoSugestao, string> = {
+  CONVERGENTE: "As execuções concordaram. Confira o trecho e confirme ou altere.",
+  DIVERGENTE: "As execuções não concordaram. Não há nível sugerido: escolha você.",
+  SEM_EVIDENCIA: "A resposta não parece tratar deste critério. Escolha o nível.",
+  INDETERMINADO: "Execuções válidas insuficientes para uma sugestão. Escolha o nível.",
+  INDISPONIVEL: "Sem pré-avaliação para esta resposta. Corrija normalmente.",
+  OCULTO: "Condição sem apoio: corrija sem sugestão.",
+};

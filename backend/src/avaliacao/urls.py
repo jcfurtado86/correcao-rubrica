@@ -6,6 +6,7 @@ from avaliacao.views import (
     RetomarView,
     RodadasView,
     RodadaView,
+    SugestoesDaRespostaView,
 )
 
 urlpatterns = [
@@ -14,4 +15,5 @@ urlpatterns = [
     path("rodadas/<int:pk>/", RodadaView.as_view(), name="rodada"),
     path("rodadas/<int:pk>/retomar/", RetomarView.as_view(), name="retomar"),
     path("respostas/<int:pk>/execucoes/", ExecucoesDaRespostaView.as_view(), name="execucoes"),
+    path("respostas/<int:pk>/sugestoes/", SugestoesDaRespostaView.as_view(), name="sugestoes"),
 ]

@@ -255,7 +255,7 @@ para copiar e adaptar: `~/Projetos/extenda/`.
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T048 [P] [US2] Escrever `backend/tests/unit/test_consolidacao.py` (research R6), cobrindo:
+- [X] T048 [P] [US2] Escrever `backend/tests/unit/test_consolidacao.py` (research R6), cobrindo:
   - 5/5 → `CONVERGENTE` com acordo 1,0;
   - 4-1 → `CONVERGENTE` com 0,8;
   - 3-2 → `DIVERGENTE`;
@@ -266,17 +266,17 @@ para copiar e adaptar: `~/Projetos/extenda/`.
   - `nivel_modal` preenchido mesmo quando divergente;
   - justificativa representativa = a da execução válida de menor índice;
   - recálculo com limiar 0,6 muda 3-2 para `CONVERGENTE`.
-- [ ] T049 [P] [US2] Escrever `backend/tests/integration/test_incerteza.py` (dublê, `turma_ficticia`): cada resposta com `[[cenario:X]]` termina no estado esperado; `trecho_inventado` termina `CONVERGENTE` com `n_validas=3`; `json_invalido` termina `INDETERMINADO`; `GET /lotes/{id}/fila/` devolve primeiro as respostas cujo pior estado é não convergente; a `Sugestao` divergente sai **sem** `nivel_sugerido`
+- [X] T049 [P] [US2] Escrever `backend/tests/integration/test_incerteza.py` (dublê, `turma_ficticia`): cada resposta com `[[cenario:X]]` termina no estado esperado; `trecho_inventado` termina `CONVERGENTE` com `n_validas=3`; `json_invalido` termina `INDETERMINADO`; `GET /lotes/{id}/fila/` devolve primeiro as respostas cujo pior estado é não convergente; a `Sugestao` divergente sai **sem** `nivel_sugerido`
 
 ### Implementation for User Story 2
 
-- [ ] T050 [US2] Criar `Consolidado(rodada, resposta, criterio, estado CONVERGENTE|DIVERGENTE|SEM_EVIDENCIA|INDETERMINADO, nivel_modal FK null, acordo decimal, n_validas, distribuicao JSON, limiar_usado, min_validas_usado)` em `backend/src/avaliacao/models.py`, com `UniqueConstraint(rodada, resposta, criterio)`. Gerar a migração e registrar no admin como só leitura
-- [ ] T051 [US2] Implementar `backend/src/avaliacao/consolidacao.py` como função pura `consolidar(votos: list[(indice, nivel_codigo)], limiar, min_validas) -> (estado, nivel_modal_codigo, acordo, n_validas, distribuicao)`, mais `representativa_por_nivel(execucoes_validas)`, conforme R6
-- [ ] T052 [US2] Chamar `recalcular_consolidado(rodada, resposta, criterio)` em `backend/src/avaliacao/services.py` sempre que a última execução do par sair de `PENDENTE`/`EM_ANDAMENTO`, a partir de `executar_execucao` e de `criar_rodada` (para as `VAZIA`). Criar o comando `backend/src/avaliacao/management/commands/recalcular_consolidados.py --rodada ID`
-- [ ] T053 [US2] Implementar `backend/src/avaliacao/sugestao.py`, com `sugestao(consolidado, condicao) -> dict` no formato exato de "Sugestao (por critério)" de contracts/api.md: convergente com `nivel_sugerido`, `acordo`, justificativa e trechos; divergente com `nivel_sugerido: null` e `alternativas` por nível votado, cada uma com justificativa e trechos da representativa; sem evidência e indeterminado sem `nivel_sugerido`; `SEM_APOIO` → só `{"criterio", "estado": "OCULTO"}`
-- [ ] T054 [US2] Implementar `GET /lotes/{id}/fila/` em `backend/src/revisao/{views,urls}.py` (app já criada em T001, ainda sem modelos): `estado_pior` da resposta pela prioridade de data-model.md, ordenado por prioridade e depois por código. `n_decididos` e `n_criterios` ficam 0 e total até a US3
-- [ ] T055 [P] [US2] Criar `frontend/src/pages/Fila.tsx`: lista com o selo do estado pior (cores: divergente, sem evidência e indeterminado em destaque; convergente neutro), contagem por estado no topo e link para a resposta
-- [ ] T056 [US2] Criar os componentes `frontend/src/components/CartaoCriterio.tsx` (convergente: nível e "5/5", justificativa, trechos destacados no texto ao passar o mouse) e `frontend/src/components/Distribuicao.tsx` (divergente: "Divergente, 3× N2 e 2× N3", uma alternativa por nível com justificativa e trechos, nenhum nível pré-selecionado). Usá-los em `frontend/src/pages/Resposta.tsx`, com a lista bruta de T047 num painel recolhido "Execuções" visível só ao dono ou ao pesquisador
+- [X] T050 [US2] Criar `Consolidado(rodada, resposta, criterio, estado CONVERGENTE|DIVERGENTE|SEM_EVIDENCIA|INDETERMINADO, nivel_modal FK null, acordo decimal, n_validas, distribuicao JSON, limiar_usado, min_validas_usado)` em `backend/src/avaliacao/models.py`, com `UniqueConstraint(rodada, resposta, criterio)`. Gerar a migração e registrar no admin como só leitura
+- [X] T051 [US2] Implementar `backend/src/avaliacao/consolidacao.py` como função pura `consolidar(votos: list[(indice, nivel_codigo)], limiar, min_validas) -> (estado, nivel_modal_codigo, acordo, n_validas, distribuicao)`, mais `representativa_por_nivel(execucoes_validas)`, conforme R6
+- [X] T052 [US2] Chamar `recalcular_consolidado(rodada, resposta, criterio)` em `backend/src/avaliacao/services.py` sempre que a última execução do par sair de `PENDENTE`/`EM_ANDAMENTO`, a partir de `executar_execucao` e de `criar_rodada` (para as `VAZIA`). Criar o comando `backend/src/avaliacao/management/commands/recalcular_consolidados.py --rodada ID`
+- [X] T053 [US2] Implementar `backend/src/avaliacao/sugestao.py`, com `sugestao(consolidado, condicao) -> dict` no formato exato de "Sugestao (por critério)" de contracts/api.md: convergente com `nivel_sugerido`, `acordo`, justificativa e trechos; divergente com `nivel_sugerido: null` e `alternativas` por nível votado, cada uma com justificativa e trechos da representativa; sem evidência e indeterminado sem `nivel_sugerido`; `SEM_APOIO` → só `{"criterio", "estado": "OCULTO"}`
+- [X] T054 [US2] Implementar `GET /lotes/{id}/fila/` em `backend/src/revisao/{views,urls}.py` (app já criada em T001, ainda sem modelos): `estado_pior` da resposta pela prioridade de data-model.md, ordenado por prioridade e depois por código. `n_decididos` e `n_criterios` ficam 0 e total até a US3
+- [X] T055 [P] [US2] Criar `frontend/src/pages/Fila.tsx`: lista com o selo do estado pior (cores: divergente, sem evidência e indeterminado em destaque; convergente neutro), contagem por estado no topo e link para a resposta
+- [X] T056 [US2] Criar os componentes `frontend/src/components/CartaoCriterio.tsx` (convergente: nível e "5/5", justificativa, trechos destacados no texto ao passar o mouse) e `frontend/src/components/Distribuicao.tsx` (divergente: "Divergente, 3× N2 e 2× N3", uma alternativa por nível com justificativa e trechos, nenhum nível pré-selecionado). Usá-los em `frontend/src/pages/Resposta.tsx`, com a lista bruta de T047 num painel recolhido "Execuções" visível só ao dono ou ao pesquisador
 
 **Checkpoint**: US1 + US2. Quickstart V4 passa
 
