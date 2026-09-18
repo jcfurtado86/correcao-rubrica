@@ -5,6 +5,7 @@ import Importacao from "./pages/Importacao";
 import Login from "./pages/Login";
 import Lote from "./pages/Lote";
 import LoteNovo from "./pages/LoteNovo";
+import Painel from "./pages/Painel";
 import Lotes from "./pages/Lotes";
 import Resposta from "./pages/Resposta";
 import RespostaInspecao from "./pages/RespostaInspecao";
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="/lotes/:id/importar" element={<Importacao />} />
         <Route path="/lotes/:id/rodada" element={<Rodada />} />
         <Route path="/lotes/:id/fila" element={<Fila />} />
+        <Route path="/lotes/:id/painel" element={<Painel />} />
         <Route path="/lotes/:id/respostas/:rid" element={<Resposta />} />
         <Route path="/respostas/:id/execucoes" element={<RespostaInspecao />} />
         <Route path="*" element={<p>Página não encontrada.</p>} />

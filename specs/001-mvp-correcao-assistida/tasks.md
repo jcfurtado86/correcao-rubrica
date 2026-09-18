@@ -340,7 +340,7 @@ para copiar e adaptar: `~/Projetos/extenda/`.
 
 ### Tests for User Story 4 ⚠️
 
-- [ ] T066 [P] [US4] Escrever `backend/tests/unit/test_calculos.py` com fixtures calculadas à mão:
+- [X] T066 [P] [US4] Escrever `backend/tests/unit/test_calculos.py` com fixtures calculadas à mão:
   - concordância exata e adjacente (±1 posição ordinal);
   - QWK igual a `sklearn.metrics.cohen_kappa_score(weights="quadratic")`;
   - concordância seletiva e cobertura;
@@ -350,15 +350,15 @@ para copiar e adaptar: `~/Projetos/extenda/`.
   - α de Krippendorff ordinal (`krippendorff.alpha(level_of_measurement="ordinal")`);
   - ancoragem;
   - mediana de tempo por condição.
-- [ ] T067 [P] [US4] Escrever `backend/tests/integration/test_exportacao_reproducao.py`: rodada, reaplicação e decisões com o dublê; baixar `exportacao.zip`; conferir arquivos e colunas de `contracts/exportacao.md`; executar `analysis/reproduzir_metricas.py` por subprocess e exigir saída `OK: 0 divergências`
+- [X] T067 [P] [US4] Escrever `backend/tests/integration/test_exportacao_reproducao.py`: rodada, reaplicação e decisões com o dublê; baixar `exportacao.zip`; conferir arquivos e colunas de `contracts/exportacao.md`; executar `analysis/reproduzir_metricas.py` por subprocess e exigir saída `OK: 0 divergências`
 
 ### Implementation for User Story 4
 
-- [ ] T068 [US4] Implementar `backend/src/metricas/calculos.py` com as funções puras da tabela de research R10, recebendo listas e dicionários simples (sem ORM), para serem importáveis pelo script de análise
-- [ ] T069 [US4] Implementar `backend/src/metricas/painel.py` e `GET /lotes/{id}/painel/?rodada=&limiar=` em `backend/src/metricas/{views,urls}.py`. Ele monta as entradas a partir do banco (modal da rodada × decisão vigente do dono), recalcula os estados em memória quando `limiar` é informado, sem gravar, e devolve as métricas por critério e no total, incluindo a estabilidade entre rodadas quando houver reaplicação
-- [ ] T070 [US4] Implementar `backend/src/metricas/exportacao.py` e `GET /lotes/{id}/exportacao.zip`, com os arquivos, colunas e regras de `contracts/exportacao.md`: docentes como `D01…`; `?incluir_texto=1` e `?incluir_motivos=1`; `metricas.json` gerado pelas mesmas funções do painel
-- [ ] T071 [P] [US4] Criar `analysis/reproduzir_metricas.py` e `analysis/requirements.txt`. O script é independente do backend e importa só `numpy`, `scikit-learn`, `statsmodels` e `krippendorff` (copia as fórmulas; não importa `backend`). Lê o ZIP, recalcula tudo, compara com `metricas.json` (tolerância 1e-9) e imprime `OK: 0 divergências` ou a lista de diferenças, saindo com código 1
-- [ ] T072 [US4] Criar `frontend/src/pages/Painel.tsx`: seletor de rodada e de limiar (0,6 / 0,8 / 1,0) e tabela por critério com o tipo e todas as métricas de R10. Adicionar o botão "Reaplicar lote" (estimativa e confirmação, reaproveitando T045) e "Exportar dados (ZIP)". Antes de qualquer gráfico, carregar a skill `dataviz`
+- [X] T068 [US4] Implementar `backend/src/metricas/calculos.py` com as funções puras da tabela de research R10, recebendo listas e dicionários simples (sem ORM), para serem importáveis pelo script de análise
+- [X] T069 [US4] Implementar `backend/src/metricas/painel.py` e `GET /lotes/{id}/painel/?rodada=&limiar=` em `backend/src/metricas/{views,urls}.py`. Ele monta as entradas a partir do banco (modal da rodada × decisão vigente do dono), recalcula os estados em memória quando `limiar` é informado, sem gravar, e devolve as métricas por critério e no total, incluindo a estabilidade entre rodadas quando houver reaplicação
+- [X] T070 [US4] Implementar `backend/src/metricas/exportacao.py` e `GET /lotes/{id}/exportacao.zip`, com os arquivos, colunas e regras de `contracts/exportacao.md`: docentes como `D01…`; `?incluir_texto=1` e `?incluir_motivos=1`; `metricas.json` gerado pelas mesmas funções do painel
+- [X] T071 [P] [US4] Criar `analysis/reproduzir_metricas.py` e `analysis/requirements.txt`. O script é independente do backend e importa só `numpy`, `scikit-learn`, `statsmodels` e `krippendorff` (copia as fórmulas; não importa `backend`). Lê o ZIP, recalcula tudo, compara com `metricas.json` (tolerância 1e-9) e imprime `OK: 0 divergências` ou a lista de diferenças, saindo com código 1
+- [X] T072 [US4] Criar `frontend/src/pages/Painel.tsx`: seletor de rodada e de limiar (0,6 / 0,8 / 1,0) e tabela por critério com o tipo e todas as métricas de R10. Adicionar o botão "Reaplicar lote" (estimativa e confirmação, reaproveitando T045) e "Exportar dados (ZIP)". Antes de qualquer gráfico, carregar a skill `dataviz`
 
 **Checkpoint**: quickstart V6 passa
 

@@ -195,3 +195,35 @@ export const ROTULO_TIPO: Record<DecisaoT["tipo"], string> = {
   ESCOLHA: "escolheu (sem sugestão)",
   CEGA: "decidiu sem apoio",
 };
+
+export type Concordancia = { n: number; exata: number | null; adjacente: number | null; qwk: number | null };
+export type BlocoPainel = {
+  n_pares: number;
+  estados: Partial<Record<EstadoSugestao, number>>;
+  taxa_divergencia: number | null;
+  taxa_nao_convergente: number | null;
+  acordo_medio: number | null;
+  fleiss: number | null;
+  concordancia: Concordancia;
+  seletiva: {
+    cobertura: number | null;
+    n_convergentes: number;
+    n_nao_convergentes: number;
+    exata_convergentes: number | null;
+    exata_nao_convergentes: number | null;
+  };
+  estabilidade: { n: number; exata: number | null; qwk: number | null } | null;
+  distribuicao_decidida: Record<string, number>;
+};
+export type Painel = {
+  rodada: number | null;
+  rodadas: number[];
+  limiar: number;
+  recalculado: boolean;
+  modelo: string;
+  custo: { estimado_usd: number; acumulado_usd: number };
+  criterios: (BlocoPainel & { criterio: number; nome: string; tipo: TipoCriterio })[];
+  total: BlocoPainel;
+  por_tipo: Record<TipoCriterio, { n_pares: number; taxa_divergencia: number | null; taxa_nao_convergente: number | null; exata: number | null }>;
+  tempo: { n_respostas: number; mediana_ms: number | null; media_ms: number | null };
+};

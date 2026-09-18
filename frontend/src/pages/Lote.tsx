@@ -48,6 +48,11 @@ export default function Lote() {
             <button className="primario">Corrigir</button>
           </Link>
         )}
+        {concluida && (
+          <Link to={`/lotes/${id}/painel`}>
+            <button>Painel de consistência</button>
+          </Link>
+        )}
       </div>
       {concluida && fila && (
         <div className="cartao grade">

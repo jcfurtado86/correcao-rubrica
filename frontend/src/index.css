@@ -117,3 +117,52 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .faixa-bloco.COM_APOIO { background: var(--convergente-fundo); }
 kbd { font-size: 0.75rem; border: 1px solid var(--borda); border-radius: 4px; padding: 0 0.3rem; color: var(--suave); }
 details summary { cursor: pointer; }
+
+/* --- gráficos (skill dataviz: paleta de referência validada, slots 1–4) --- */
+:root {
+  --serie-1: #2a78d6;
+  --serie-2: #eb6834;
+  --serie-3: #1baf7a;
+  --serie-4: #eda100;
+  --grade: #e1e0d9;
+  --eixo: #c3c2b7;
+  --tinta-suave: #898781;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --serie-1: #3987e5;
+    --serie-2: #d95926;
+    --serie-3: #199e70;
+    --serie-4: #c98500;
+    --grade: #2c2c2a;
+    --eixo: #383835;
+  }
+}
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; }
+.kpi { background: var(--superficie); border: 1px solid var(--borda); border-radius: var(--raio); padding: 0.8rem 1rem; }
+.kpi .valor { font-size: 1.6rem; font-weight: 650; line-height: 1.1; }
+.kpi .rotulo { color: var(--suave); font-size: 0.85rem; }
+.kpi .detalhe { color: var(--tinta-suave); font-size: 0.8rem; }
+.grafico { position: relative; }
+.grafico .linha-grafico { display: grid; grid-template-columns: 11rem 1fr; align-items: center; gap: 0.75rem; }
+.grafico .rotulo-categoria { font-size: 0.88rem; text-align: right; color: var(--texto); }
+.grafico .faixa { position: relative; border-left: 1px solid var(--eixo); padding: 3px 0; }
+.grafico .grade-x { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--grade); }
+.grafico .alvo { display: flex; align-items: center; height: 18px; outline: none; cursor: default; }
+.grafico .alvo:focus-visible { box-shadow: 0 0 0 2px var(--primaria); border-radius: 4px; }
+.grafico .barra { height: 12px; border-radius: 0 4px 4px 0; }
+.grafico .valor-barra { font-size: 0.8rem; margin-left: 6px; color: var(--suave); font-variant-numeric: tabular-nums; }
+.grafico .pilha { display: flex; height: 16px; gap: 2px; }
+.grafico .segmento { height: 100%; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; color: #0b0b0b; outline: none; min-width: 0; }
+.grafico .segmento:last-child { border-radius: 0 4px 4px 0; }
+.grafico .segmento:focus-visible { box-shadow: 0 0 0 2px var(--primaria); }
+.grafico .eixo-x { display: grid; grid-template-columns: 11rem 1fr; gap: 0.75rem; font-size: 0.75rem; color: var(--tinta-suave); }
+.grafico .eixo-x > div { position: relative; height: 1rem; }
+.legenda { display: flex; gap: 1rem; flex-wrap: wrap; font-size: 0.85rem; color: var(--suave); margin-bottom: 0.5rem; }
+.legenda .amostra { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.dica {
+  position: absolute; pointer-events: none; z-index: 5; background: var(--superficie); color: var(--texto);
+  border: 1px solid var(--borda); border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.82rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12); white-space: nowrap;
+}
+.dica strong { font-size: 0.95rem; }
