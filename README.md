@@ -27,7 +27,7 @@ http://localhost:8810/admin/.
 ## Testes
 
 ```bash
-cd backend && .venv/bin/pytest          # backend (banco do compose em localhost:55433)
+cd backend && .venv/bin/pytest          # backend, em paralelo (banco do compose em localhost:55433)
 cd frontend && npm test                 # funções do frontend
 ```
 

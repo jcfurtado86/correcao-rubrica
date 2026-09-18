@@ -1,11 +1,13 @@
 import { Link, useParams } from "react-router-dom";
-import { ROTULO_STATUS, type Lote as LoteT, type RespostaResumo } from "../services/tipos";
+import { baixar } from "../services/api";
+import { ROTULO_ESTADO, ROTULO_STATUS, type EstadoSugestao, type Fila, type Lote as LoteT, type RespostaResumo } from "../services/tipos";
 import { useCarregar } from "../services/useCarregar";
 
 export default function Lote() {
   const { id } = useParams();
   const { dados: lote, erro } = useCarregar<LoteT>(`/lotes/${id}/`);
   const { dados: respostas } = useCarregar<RespostaResumo[]>(`/lotes/${id}/respostas/`);
+  const { dados: fila } = useCarregar<Fila>(`/lotes/${id}/fila/`);
   if (erro) return <p className="erro">{erro}</p>;
   if (!lote) return <p className="suave">Carregando…</p>;
   const rodadas = lote.rodadas ?? [];
@@ -47,6 +49,25 @@ export default function Lote() {
           </Link>
         )}
       </div>
+      {concluida && fila && (
+        <div className="cartao grade">
+          <h3>Resumo da correção</h3>
+          <div className="linha" style={{ gap: "1.25rem" }}>
+            {(Object.keys(fila.contagem) as EstadoSugestao[]).map((e) => (
+              <span key={e}>
+                <span className={`selo ${e}`}>{ROTULO_ESTADO[e]}</span> {fila.contagem[e]}
+              </span>
+            ))}
+          </div>
+          <p style={{ margin: 0 }}>
+            <strong>{fila.respostas.filter((r) => r.finalizada).length}</strong> de {fila.respostas.length} respostas finalizadas.
+          </p>
+          <div className="linha">
+            <button onClick={() => baixar(`/lotes/${id}/notas.csv`, `notas-lote${id}.csv`)}>Baixar notas (CSV)</button>
+            <span className="suave">Só respostas com todos os critérios decididos, identificadas pelo código.</span>
+          </div>
+        </div>
+      )}
       {respostas && respostas.length > 0 && (
         <div className="cartao">
           <h3>Respostas ({respostas.length})</h3>

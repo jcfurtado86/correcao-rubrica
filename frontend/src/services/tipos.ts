@@ -161,3 +161,37 @@ export const EXPLICACAO_ESTADO: Record<EstadoSugestao, string> = {
   INDISPONIVEL: "Sem pré-avaliação para esta resposta. Corrija normalmente.",
   OCULTO: "Condição sem apoio: corrija sem sugestão.",
 };
+
+export type Condicao = "COM_APOIO" | "SEM_APOIO";
+export type DecisaoT = {
+  id: number;
+  criterio: number;
+  nivel: number;
+  nivel_codigo: string;
+  tipo: "CONFIRMACAO" | "ALTERACAO" | "ESCOLHA" | "CEGA";
+  estado_exibido: string;
+  nivel_sugerido: number | null;
+  motivo: string;
+  tempo_ativo_ms: number;
+  vigente: boolean;
+  substitui: number | null;
+  criado_em: string;
+};
+export type Sessao = {
+  sessao: number;
+  resposta: number;
+  codigo: string;
+  texto: string;
+  aviso: string | null;
+  condicao: Condicao;
+  rodada: number | null;
+  criterios: Sugestao[];
+  decisoes_vigentes: DecisaoT[];
+};
+
+export const ROTULO_TIPO: Record<DecisaoT["tipo"], string> = {
+  CONFIRMACAO: "confirmou a sugestão",
+  ALTERACAO: "alterou a sugestão",
+  ESCOLHA: "escolheu (sem sugestão)",
+  CEGA: "decidiu sem apoio",
+};

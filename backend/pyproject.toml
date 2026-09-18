@@ -2,6 +2,8 @@
 DJANGO_SETTINGS_MODULE = "config.settings"
 pythonpath = ["src", "."]
 testpaths = ["tests"]
+# Paralelo (pytest-xdist): um banco de teste por worker. Use -n 0 para depurar.
+addopts = "-n 8"
 
 [tool.coverage.run]
 source = ["src"]

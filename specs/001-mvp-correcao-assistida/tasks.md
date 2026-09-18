@@ -290,7 +290,7 @@ para copiar e adaptar: `~/Projetos/extenda/`.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T057 [P] [US3] Escrever `backend/tests/integration/test_decisoes.py`, cobrindo:
+- [X] T057 [P] [US3] Escrever `backend/tests/integration/test_decisoes.py`, cobrindo:
   - `tipo` derivado: igual à sugestão → `CONFIRMACAO`; diferente → `ALTERACAO`; sem sugestão exibida → `ESCOLHA`;
   - nova decisão no mesmo critério marca a anterior `vigente=False` e aponta `substitui`;
   - "exatamente uma vigente por (resposta, critério, docente, participacao)";
@@ -299,25 +299,25 @@ para copiar e adaptar: `~/Projetos/extenda/`.
   - `tempo_ativo_ms` da sessão = o da última decisão;
   - `notas.csv` traz só respostas finalizadas, com nota = Σ pontuação × peso;
   - não existe rota que aceite lista de decisões.
-- [ ] T058 [P] [US3] Escrever `backend/tests/contract/test_api_revisao.py`: formatos de `POST /respostas/{id}/sessoes/` (`sessao`, `texto`, `condicao`, `criterios:[Sugestao]`, `decisoes_vigentes`), `POST /sessoes/{id}/decisoes/`, `PATCH /sessoes/{id}/`, `GET /respostas/{id}/historico/` e `GET /lotes/{id}/notas.csv`
-- [ ] T059 [P] [US3] Escrever `frontend/src/services/tempoAtivo.test.ts` (vitest com timers falsos): conta com a aba visível; pausa em `visibilitychange` oculto; pausa após 60 s sem teclado ou mouse; retoma com nova interação
+- [X] T058 [P] [US3] Escrever `backend/tests/contract/test_api_revisao.py`: formatos de `POST /respostas/{id}/sessoes/` (`sessao`, `texto`, `condicao`, `criterios:[Sugestao]`, `decisoes_vigentes`), `POST /sessoes/{id}/decisoes/`, `PATCH /sessoes/{id}/`, `GET /respostas/{id}/historico/` e `GET /lotes/{id}/notas.csv`
+- [X] T059 [P] [US3] Escrever `frontend/src/services/tempoAtivo.test.ts` (vitest com timers falsos): conta com a aba visível; pausa em `visibilitychange` oculto; pausa após 60 s sem teclado ou mouse; retoma com nova interação
 
 ### Implementation for User Story 3
 
-- [ ] T060 [US3] Criar os modelos em `backend/src/revisao/models.py`:
+- [X] T060 [US3] Criar os modelos em `backend/src/revisao/models.py`:
   - `SessaoCorrecao(docente, resposta, condicao COM_APOIO|SEM_APOIO, rodada FK null, aberta_em, tempo_ativo_ms)`;
   - `Decisao(sessao, criterio, nivel, estado_exibido CONVERGENTE|DIVERGENTE|SEM_EVIDENCIA|INDETERMINADO|OCULTO, nivel_sugerido FK null, tipo CONFIRMACAO|ALTERACAO|ESCOLHA|CEGA, motivo opcional, tempo_ativo_ms, substitui FK self null, vigente bool)`.
 
   Adicionar `UniqueConstraint` parcial (`condition=Q(vigente=True)`) sobre (resposta via sessão, critério, docente). Como a constraint não atravessa FK, desnormalizar `resposta` e `docente` em `Decisao`. O campo `participacao` entra na US5. Gerar a migração e registrar no admin como só leitura.
-- [ ] T061 [US3] Implementar `backend/src/revisao/services.py`:
+- [X] T061 [US3] Implementar `backend/src/revisao/services.py`:
   - `abrir_sessao(docente, resposta, condicao="COM_APOIO")`: usa a rodada mais recente `CONCLUIDA`/`COM_FALHAS` e devolve as sugestões via `avaliacao.sugestao`;
   - `registrar_decisao(sessao, criterio, nivel, motivo, tempo_ativo_ms)`: `transaction.atomic`, snapshot de `estado_exibido` e `nivel_sugerido`, derivação de `tipo`, substituição da vigente;
   - `atualizar_tempo(sessao, tempo_ativo_ms)`;
   - `finalizada(resposta, docente)`;
   - `nota(resposta, docente)`.
-- [ ] T062 [US3] Implementar `backend/src/revisao/{serializers,views,urls}.py` para `POST /respostas/{id}/sessoes/`, `POST /sessoes/{id}/decisoes/`, `PATCH /sessoes/{id}/`, `GET /respostas/{id}/historico/` e `GET /lotes/{id}/notas.csv` (colunas `codigo, <nome de cada critério>, nota_total`). Completar a fila de T054 com `n_decididos` e `finalizada`
-- [ ] T063 [P] [US3] Implementar `frontend/src/services/tempoAtivo.ts`: classe `CronometroAtivo`, com `iniciar()`, `acumuladoMs()` e `parar()`, a regra de pausa de research R11 e batida `PATCH` a cada 30 s
-- [ ] T064 [US3] Transformar `frontend/src/pages/Resposta.tsx` em tela de correção:
+- [X] T062 [US3] Implementar `backend/src/revisao/{serializers,views,urls}.py` para `POST /respostas/{id}/sessoes/`, `POST /sessoes/{id}/decisoes/`, `PATCH /sessoes/{id}/`, `GET /respostas/{id}/historico/` e `GET /lotes/{id}/notas.csv` (colunas `codigo, <nome de cada critério>, nota_total`). Completar a fila de T054 com `n_decididos` e `finalizada`
+- [X] T063 [P] [US3] Implementar `frontend/src/services/tempoAtivo.ts`: classe `CronometroAtivo`, com `iniciar()`, `acumuladoMs()` e `parar()`, a regra de pausa de research R11 e batida `PATCH` a cada 30 s
+- [X] T064 [US3] Transformar `frontend/src/pages/Resposta.tsx` em tela de correção:
   - abre a sessão ao entrar;
   - para cada critério: botões de nível (atalhos de teclado 1–9 no critério em foco) e campo de motivo opcional;
   - convergente: "Confirmar N3" (Enter);
@@ -326,7 +326,7 @@ para copiar e adaptar: `~/Projetos/extenda/`.
   - selo "Finalizada" quando todos os critérios estão decididos;
   - botão "Próxima da fila";
   - gaveta "Histórico".
-- [ ] T065 [US3] Adicionar à página do lote (`frontend/src/pages/Lote.tsx`) o resumo (respostas, finalizadas, por estado), os links para a fila e para a rodada, e o botão "Baixar notas (CSV)" com a legenda "só respostas com todos os critérios decididos"
+- [X] T065 [US3] Adicionar à página do lote (`frontend/src/pages/Lote.tsx`) o resumo (respostas, finalizadas, por estado), os links para a fila e para a rodada, e o botão "Baixar notas (CSV)" com a legenda "só respostas com todos os critérios decididos"
 
 **Checkpoint**: núcleo P1 completo (US1 + US2 + US3). Quickstart V1–V5 passam. **Aqui o MVP pode ir para o primeiro teste com o orientador**
 

@@ -21,8 +21,20 @@ PRIORIDADE = {
 
 
 def decisoes_por_resposta(lote, docente, participacao=None) -> dict[int, int]:
-    """Número de critérios com decisão vigente por resposta (US3 preenche)."""
-    return {}
+    """Número de critérios com decisão vigente por resposta."""
+    from django.db.models import Count
+
+    from revisao.models import Decisao
+
+    filtro = {"resposta__lote": lote, "docente": docente, "vigente": True}
+    if hasattr(Decisao, "participacao"):
+        filtro["participacao"] = participacao
+    return dict(
+        Decisao.objects.filter(**filtro)
+        .values_list("resposta_id")
+        .annotate(n=Count("id"))
+        .values_list("resposta_id", "n")
+    )
 
 
 def montar_fila(lote, docente, participacao=None, respostas=None) -> dict:
