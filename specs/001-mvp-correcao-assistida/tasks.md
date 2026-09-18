@@ -495,6 +495,14 @@ Task: "T037 sementes.py"      Task: "T038 estimativa.py"  Task: "T034 prompt.py"
 
 ---
 
+## Estado da implementação (2026-09-18)
+
+90 de 91 tarefas concluídas. A T089 (modelo local) foi descartada por decisão do orientador. As
+descrições acima são o plano original. Onde a implementação divergiu (retry manual em vez de
+`autoretry_for` na T039, prompt v2 no lugar do v1 da T034, simplejwt sem allauth na T010, rotas e
+campos a mais), o registro está em "Desvios registrados na implementação" no
+[plan.md](plan.md), e os contratos e o data-model descrevem o estado real.
+
 ## Notes
 
 - [P] = arquivos diferentes, sem dependência pendente

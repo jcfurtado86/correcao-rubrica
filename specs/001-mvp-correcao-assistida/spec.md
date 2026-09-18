@@ -4,7 +4,7 @@
 
 **Created**: 2026-09-18
 
-**Status**: Draft
+**Status**: Implementado (MVP, 2026-09-18). Validação em [quickstart.md](quickstart.md)
 
 **Input**: User description: "MVP funcional para teste do produto descrito no Canvas de Projeto
 'Correção Assistida por Rubrica com Aferição de Consistência Avaliativa' (Glauco Silva Sousa,
@@ -247,8 +247,10 @@ critérios, níveis e descritores foram preservados.
   exigir confirmação; MUST respeitar um teto de custo por lote.
 - **FR-011**: O processamento MUST ser retomável e não repetir chamadas já concluídas;
   reprocessar o mesmo lote sem alteração MUST NOT gerar custo novo, exceto na reaplicação.
-- **FR-012**: O sistema MUST permitir trocar o serviço de modelo de linguagem (comercial ou
-  local) por configuração, registrando qual foi usado em cada execução.
+- **FR-012**: O sistema MUST permitir escolher, por lote, o modelo de linguagem entre os
+  disponíveis no servidor, registrando o modelo e o provedor de cada rodada e execução. No MVP
+  são o Gemini em nível pago e um dublê sem custo para testes. A execução local foi descartada
+  pelo orientador em 2026-09-18.
 
 **Incerteza**
 
@@ -353,4 +355,6 @@ critérios, níveis e descritores foram preservados.
 - O estudo com docentes depende de aprovação ética ou declaração institucional aplicável e do
   termo de cessão das respostas pelos docentes. Isso é providenciado fora do sistema.
 - O uso de serviço comercial de modelo de linguagem envolve envio de texto anonimizado a
-  terceiro. O parecer de tratamento de dados do canvas cobre essa decisão.
+  terceiro. O parecer de tratamento de dados do canvas cobre essa decisão (rascunho em
+  `docs/parecer-tratamento-dados.md`).
+- Só o nível pago da API é usado (decisão do orientador). Modelo local não é usado.

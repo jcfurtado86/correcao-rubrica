@@ -1,13 +1,3 @@
-<!--
-Sync Impact Report
-- Versão: (template) → 1.0.0 (ratificação inicial)
-- Princípios definidos: I. Decisão Docente Soberana; II. Ancoragem Obrigatória no Texto;
-  III. Incerteza como Informação; IV. Privacidade desde a Carga;
-  V. Rastreabilidade para Pesquisa; VI. Simplicidade de MVP e Custo Controlado
-- Seções adicionadas: Restrições de Dados, Modelo e Custo; Fluxo de Desenvolvimento e Portões de Qualidade
-- Seções removidas: nenhuma
-- TODOs pendentes: nenhum
--->
 # Correção Assistida por Rubrica — Constituição
 
 Fonte: Canvas de Projeto "Correção Assistida por Rubrica com Aferição de Consistência Avaliativa"
@@ -67,8 +57,8 @@ Razão: produção de estudante pode conter dado pessoal (LGPD); o canvas exige 
 
 ### V. Rastreabilidade para Pesquisa
 
-- Toda execução registra: modelo e provedor, versão do prompt, versão (hash) da rubrica,
-  parâmetros de geração, tokens, custo estimado, latência e resposta bruta.
+- Toda execução registra, diretamente ou pela rodada: modelo e provedor, versão do prompt,
+  versão (hash) da rubrica, semente, tokens, custo, latência e resposta bruta.
 - Rubrica em uso por um lote é imutável; alteração gera nova versão.
 - Toda métrica do relatório (concordância, estabilidade, taxa de divergência, tempo)
   MUST ser recalculável a partir dos registros, e exportável em formato tabular para
@@ -82,7 +72,7 @@ Razão: o produto é também instrumento de pesquisa; os resultados vão para ar
 - Um desenvolvedor, doze semanas: um único serviço implantável, um banco relacional,
   sem microsserviços, filas externas ou infraestrutura que o problema não exija (YAGNI).
 - O acesso ao modelo de linguagem passa por uma interface única de provedor, permitindo
-  trocar entre serviço comercial e execução local sem alterar o domínio.
+  trocar de provedor sem alterar o domínio.
 - Todo lançamento de pré-avaliação exibe estimativa de custo antes de executar e respeita
   teto configurável por lote; resultados idênticos são reaproveitados por cache.
 
@@ -92,9 +82,9 @@ Razão: o produto é também instrumento de pesquisa; os resultados vão para ar
   lotes de teste sintéticos são rotulados como tal.
 - O prompt de avaliação é artefato versionado no repositório; mudança de prompt é
   mudança de versão e invalida comparações diretas entre lotes.
-- Cache de pré-avaliação é chaveado por (modelo, versão do prompt, versão da rubrica,
-  critério, hash do texto, índice da execução). A reaplicação para medir estabilidade
-  usa rodada nova, fora do cache.
+- A unidade de cache da pré-avaliação é a rodada: execução concluída nunca é refeita, e
+  retomar ou reprocessar a mesma rodada não gera custo novo. A reaplicação para medir
+  estabilidade usa rodada nova, com sementes novas.
 
 ## Fluxo de Desenvolvimento e Portões de Qualidade
 
@@ -115,4 +105,9 @@ Razão: o produto é também instrumento de pesquisa; os resultados vão para ar
 - Complexidade que contrarie o Princípio VI MUST ser justificada no plano
   (seção de rastreamento de complexidade).
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-18 | **Last Amended**: 2026-09-18
+**Version**: 1.0.1 | **Ratified**: 2026-09-18 | **Last Amended**: 2026-09-18
+
+Emenda 1.0.1 (PATCH, esclarecimento): a redação do cache e do registro de execução passou a
+descrever o que foi implementado (cache por rodada; hash da rubrica e versão do prompt
+guardados pela rodada). A interface de provedor deixou de citar execução local, que o
+orientador descartou.

@@ -71,9 +71,9 @@ raciocínio de 613 a 913 tokens (média de 772). Latência típica de 5 a 8 s. A
 2. **Temperatura no padrão.** Segue a nota do Extenda: para o Gemini 3 o Google recomenda não
    baixar a temperatura. A variação medida é a do modelo como é usado na prática, o mesmo
    cenário do teste preliminar do canvas.
-3. **O raciocínio responde por cerca de 80% dos tokens de saída** e domina o custo. O nível de
-   raciocínio é parâmetro de configuração, a calibrar num segundo piloto, e é também variável
-   de pesquisa, porque pode afetar a estabilidade.
+3. **O raciocínio responde pela maior parte dos tokens de saída** e domina o custo. O MVP usa o
+   nível de raciocínio padrão do modelo (não é configurável). Torná-lo parâmetro fica como
+   variável de pesquisa futura, porque pode afetar a estabilidade.
 4. **Resiliência é obrigatória.** Ver R8.
 
 ## R4. Saída estruturada
@@ -99,10 +99,13 @@ isolado evita efeito halo entre critérios e torna a divergência mensurável cr
    espaços colapsados, casefold. Mantém um mapa posição-normalizada → posição-original.
 2. Busca exata do trecho normalizado. Se achar, grava `inicio` e `fim` no texto original
    armazenado (já anonimizado).
-3. Trecho vazio, com reticências, com menos de 3 palavras ou não localizado torna a execução
+3. Tolerâncias só de forma: aspas nas bordas do trecho são ignoradas e, se o trecho não for
+   achado, tenta-se de novo sem a pontuação final (`.,;:!?`). Os dois textos são comparados em
+   NFC.
+4. Trecho vazio, com reticências, com menos de 3 palavras ou não localizado torna a execução
    **inválida**. Basta um trecho não localizado para invalidar a execução: citação inventada
    indica que a justificativa não é confiável.
-4. `SEM_EVIDENCIA` exige lista de trechos vazia. O contrário (nível com lista vazia) é inválido.
+5. `SEM_EVIDENCIA` exige lista de trechos vazia. O contrário (nível com lista vazia) é inválido.
 
 Não há correspondência aproximada (fuzzy). Paráfrase não é âncora.
 
@@ -127,14 +130,14 @@ daquele nível. É determinística.
 ## R7. Custo e estimativa
 
 **Estimativa antes da execução**:
-`chamadas = respostas × critérios × N`. Entrada estimada pelo tamanho real do prompt montado
-(caracteres/4, calibrado com `count_tokens` numa amostra de 5). Saída estimada pelo p75 do
-piloto (≈ 1.050 tokens com raciocínio), substituída pela média observada assim que as primeiras
-execuções do lote terminam.
+`chamadas = respostas elegíveis × critérios × N` (vazias e longas não chamam o modelo). Entrada
+estimada pelo tamanho real dos prompts montados (caracteres ÷ 4; não se usa `count_tokens`).
+Saída estimada por `TOKENS_SAIDA_ESTIMADOS` (1.050, com raciocínio), trocada pela média observada
+de entrada e saída quando o lote tem ao menos 10 execuções concluídas.
 
-**Ordem de grandeza** (estimativa, não medida em lote real): 40 respostas × 4 critérios × 5
-execuções = 800 chamadas. Com ~1.200 tokens de entrada e ~920 de saída por chamada, dá
-≈ US$ 3,50 por rodada no preço de 2026 e ≈ US$ 7 a partir de 2027. O lote comum do estudo é
+**Ordem de grandeza** (a partir do V7 medido abaixo, ~US$ 0,0028 por chamada): 40 respostas ×
+4 critérios × 5 execuções = 800 chamadas ≈ US$ 2,30 por rodada no preço de 2026 e ≈ US$ 4,60 a
+partir de 2027. Respostas mais longas que as da turma fictícia custam mais na entrada. O lote comum do estudo é
 pré-avaliado uma vez para todos os participantes. Com reaplicação e os lotes próprios dos
 docentes, o custo total do TCC fica na casa das dezenas de dólares.
 
@@ -173,23 +176,34 @@ do lote.
 
 ## R8. Execução assíncrona e resiliência
 
-**Decisão**: uma tarefa Celery por execução. As linhas `Execucao` são criadas em `PENDENTE`
-quando a rodada é confirmada, e a tarefa é idempotente (sai se a execução já estiver
-concluída). Configuração:
+**Decisão**: uma tarefa Celery por execução (`executar_execucao`). As linhas `Execucao` são
+criadas em `PENDENTE` quando a rodada é confirmada e enfileiradas depois do commit. A tarefa é
+idempotente: sai se a execução não estiver `PENDENTE`. Configuração:
 
-- `autoretry_for` erros 429/503/rede, com backoff exponencial e jitter, até 6 tentativas. Depois
-  disso a execução fica `FALHOU`, com o erro gravado. Falha de chamada não é a mesma coisa que
-  execução inválida.
-- `rate_limit` por tarefa e concorrência do worker configuráveis (padrão de 8 simultâneas).
-- Quando a última execução de um par termina, o consolidado do par é recalculado.
-- Retomar reenfileira as execuções `PENDENTE` e `FALHOU`.
+- Falha passageira (408, 429, 5xx, rede e timeout) devolve a execução a `PENDENTE` e a tarefa
+  pede `retry` com espera exponencial e variação aleatória (2 s a 120 s), até
+  `LLM_MAX_TENTATIVAS` (6). Depois disso, `FALHOU` com o erro gravado. Falha de chamada não é a
+  mesma coisa que execução inválida. Em modo síncrono (testes) a nova tentativa é feita em laço,
+  porque o Celery propaga o `Retry` com `task_eager_propagates`.
+- Timeout de 60 s por chamada (`LLM_TIMEOUT_S`) e teto de 8.192 tokens de saída
+  (`LLM_MAX_TOKENS_SAIDA`). Ver o diagnóstico do V7 em R7.
+- `rate_limit` por tarefa (`LLM_RATE_LIMIT`, padrão 120/min) e concorrência do worker
+  (`LLM_CONCORRENCIA`, padrão 8).
+- Quando a última execução de um par sai da fila (concluída ou falha), o consolidado do par é
+  recalculado.
+- **Worker que cai**: com `acks_late`, a mensagem reservada volta à fila depois do
+  `visibility_timeout` do Redis (10 min, e não o padrão de 1 h). A execução que ficou
+  `EM_ANDAMENTO` há mais de 10 min é considerada abandonada: retomar a devolve a `PENDENTE`, e a
+  própria tarefa a reprocessa se receber a mensagem de novo.
+- Retomar reenfileira `PENDENTE` e `FALHOU` (zerando as tentativas). Mensagem duplicada não gera
+  chamada duplicada.
 
 Armadilha herdada do Extenda: o cliente `genai.Client` precisa ficar numa variável local até a
 resposta chegar. Encadeado, ele é coletado e fecha a conexão.
 
-Meta de desempenho: 800 chamadas em até 30 min exige ≥ 0,45 chamada/s. Com 5 a 8 s de latência,
-concorrência de 8 dá folga de ~2×. Limites de requisição da conta: **a verificar** no painel do
-Google (não medidos).
+Meta de desempenho: 800 chamadas em até 30 min exige ≥ 0,45 chamada/s. **Medido no V7**:
+1,6 chamada/s com concorrência 8 (800 chamadas ≈ 8 min). Limites de requisição da conta: não
+atingidos nas 200 chamadas do V7.
 
 ## R9. Privacidade e LGPD
 
@@ -234,7 +248,17 @@ Google (não medidos).
 | Tempo | mediana do tempo ativo por resposta, por condição e por participante | própria |
 
 A referência humana dá o teto interpretável: a IA concorda com os docentes tanto quanto eles
-concordam entre si? Toda métrica sai de funções puras sobre as tabelas exportadas. O script
+concordam entre si?
+
+Convenções implementadas (`metricas/calculos.py`):
+- níveis entram pela posição ordinal (1..k);
+- pares cujo modal é `SEM_EVIDENCIA`, ou sem modal, ficam fora das medidas ordinais;
+- a concordância do lote usa as decisões vigentes da dona do lote fora de estudo;
+- a estabilidade compara o modal da rodada 1 com o da rodada 2;
+- o κ de Fleiss usa só pares com exatamente N execuções válidas;
+- o tempo por resposta soma o tempo ativo das sessões que tiveram decisão;
+- valor indefinido (amostra pequena, variância zero, nenhum item com dois avaliadores) sai como
+  `null`, nunca NaN. Toda métrica sai de funções puras sobre as tabelas exportadas. O script
 independente `analysis/reproduzir_metricas.py` recalcula as métricas a partir do ZIP de
 exportação (SC-006).
 
@@ -249,12 +273,18 @@ decisão não entra na métrica.
 
 **Decisão**:
 
-- **Metades**: as respostas do lote são embaralhadas com `semente_alocacao` e divididas ao meio
-  (A/B), estratificando pela proporção de divergentes da rodada usada, para que as duas metades
-  tenham dificuldade parecida.
-- **Participantes**: alocados em rodízio, na ordem de aceite do convite, nas 4 células
-  {braço 1: A sem/B com, braço 2: A com/B sem} × {ordem: sem-apoio primeiro, com-apoio primeiro}.
-  Com 8 participantes, cada célula recebe 2.
+- **Respostas do estudo**: só as elegíveis (sem vazias nem longas), porque as demais não têm
+  pré-avaliação a comparar.
+- **Metades**: embaralhadas com `semente_alocacao` e divididas em A/B, estratificando por "tem ao
+  menos um critério não convergente na rodada do estudo". Cada estrato começa pela metade menor,
+  o que dá equilíbrio de ±1 no total e por estrato.
+- **Participantes**: alocados em rodízio, na **ordem do convite**, pelas 4 células na sequência
+  (1, sem primeiro), (2, com primeiro), (2, sem primeiro), (1, com primeiro). Assim os dois
+  primeiros já cobrem os dois braços e as duas ordens, e com 8 participantes cada célula recebe 2.
+- **Ordem das respostas**: dentro de cada bloco, embaralhada por participante com semente
+  derivada de (`semente_alocacao`, participação). É reproduzível e separa efeito de ordem de
+  efeito de condição.
+- **Rodada**: a sessão do estudo usa a rodada fixada no estudo, e não a mais recente do lote.
 - **Condição sem apoio**: a ocultação é feita **no servidor**. A API não devolve nenhum campo de
   pré-avaliação para uma resposta da metade sem apoio daquele participante (FR-025).
 

@@ -1,8 +1,10 @@
 # Data Model — MVP Correção Assistida por Rubrica
 
 Entidades da [spec](spec.md#key-entities), já com campos, relações, regras e transições de
-estado. Os nomes seguem o português do domínio, como no Extenda. Toda tabela tem `id` e
-`criado_em`, omitidos abaixo.
+estado. Os nomes seguem o português do domínio, como no Extenda. Toda tabela tem `id`, e as que
+registram eventos têm `criado_em` (todas, exceto `Criterio`, `Nivel`, `Trecho` e
+`AlocacaoResposta`); esses dois campos ficam omitidos abaixo. Conferido contra os modelos em
+2026-09-18.
 
 ```
 Usuario ─┬─< Rubrica ─< VersaoRubrica ─< Criterio ─< Nivel
@@ -19,7 +21,7 @@ Usuario ─┬─< Rubrica ─< VersaoRubrica ─< Criterio ─< Nivel
 ## core
 
 ### Usuario
-Estende `AbstractUser`, com login por e-mail (padrão Extenda/allauth).
+Estende `AbstractUser`, sem username, com login por e-mail (JWT via simplejwt).
 
 | Campo | Tipo | Regra |
 |---|---|---|
@@ -77,7 +79,7 @@ Regra: versão sem critério não pode ser usada em lote.
 | n_execucoes | int 1–10 | padrão 5 |
 | limiar_acordo | decimal (0,5; 1,0] | padrão 0,8 |
 | min_validas | int ≥ 1, ≤ n_execucoes | padrão 3 |
-| provedor_llm, modelo_llm | texto | padrão de `LLM_PROVIDER` / `GEMINI_MODEL` |
+| provedor_llm, modelo_llm | texto | `dumb`/`dublê` ou `gemini`/`gemini-…`. Escolhidos na criação entre os do catálogo do servidor (`GET /modelos/`); padrão de `LLM_PROVIDER` / `GEMINI_MODEL` |
 | teto_usd | decimal | padrão de configuração |
 | sintetico | bool | lote de teste, permitido fora do nível pago (R9) |
 
@@ -103,14 +105,19 @@ Nenhum campo guarda nome, e-mail, matrícula ou linha original da planilha.
 | lote | FK Lote | |
 | numero | int | 1 = original, ≥ 2 = reaplicação |
 | semente_base | int | sorteada na criação, e nova em cada reaplicação |
-| versao_prompt | texto | ex.: `avaliar_criterio_v1` |
+| versao_prompt | texto | versão vigente na criação (hoje `avaliar_criterio_v2`); retomar a rodada usa a dela |
 | provedor, modelo | texto | copiados do lote |
 | custo_estimado_usd, custo_acumulado_usd, teto_usd | decimal | acumulado com atualização atômica |
+| custo_previsto_chamada_usd | decimal | estimado ÷ chamadas: valor reservado antes de cada chamada (teto) |
 | confirmada_por | FK Usuario | quem aprovou o custo |
 | status | ver abaixo | |
+| concluida_em | instante, nulo | |
+
+A rodada nasce `EM_EXECUCAO` na confirmação (a estimativa não é gravada como rodada). `ESTIMADA`
+existe no modelo, mas não é usada.
 
 ```
-ESTIMADA ──confirmar──► EM_EXECUCAO ──tudo concluído──► CONCLUIDA
+(confirmar) ──► EM_EXECUCAO ──tudo concluído──► CONCLUIDA
                            │   ▲                 └─falhas restantes─► COM_FALHAS ──retomar──┐
                            │   └──────────retomar (teto elevado)────────────────────────────┤
                            └──teto atingido──► PAUSADA_TETO                                 │
@@ -136,6 +143,7 @@ Uma avaliação de um par (resposta, critério) numa rodada. Única por
 | tokens_entrada, tokens_saida, tokens_raciocinio | int | de `usage_metadata` |
 | custo_usd, latencia_ms, tentativas | | |
 | erro | texto, nulo | última falha de chamada |
+| iniciada_em, concluida_em | instante, nulo | `iniciada_em` marca a entrada em `EM_ANDAMENTO`. Execução parada nesse estado há mais de `EXECUCAO_ABANDONADA_APOS_S` (10 min) é considerada abandonada (worker caiu) e volta para `PENDENTE` ao retomar |
 
 ### Trecho
 | Campo | Tipo | Regra |
@@ -152,14 +160,19 @@ qualquer momento (R6).
 | Campo | Tipo | Regra |
 |---|---|---|
 | estado | `CONVERGENTE` \| `DIVERGENTE` \| `SEM_EVIDENCIA` \| `INDETERMINADO` | |
-| nivel_modal | FK Nivel, nulo | sempre calculado quando há votos, exibido só se `CONVERGENTE` |
+| modal_codigo | texto | código modal (inclui `SEM_EVIDENCIA`); vazio sem votos. Em empate, o nível que apareceu primeiro |
+| nivel_modal | FK Nivel, nulo | nível do modal (nulo se `SEM_EVIDENCIA`), exibido só se `CONVERGENTE` |
 | acordo | decimal | votos do modal / válidas |
 | n_validas | int | |
 | distribuicao | JSON `{codigo: votos}` | |
 | limiar_usado, min_validas_usado | | cópia dos parâmetros no cálculo |
+| calculado_em | instante | |
 
-Prioridade na fila (FR-016): `INDETERMINADO` = `DIVERGENTE` = `SEM_EVIDENCIA` antes de
-`CONVERGENTE`. A resposta herda o pior estado entre seus critérios.
+Consolidado só existe para par cujas execuções saíram todas da fila. Par sem consolidado
+(resposta longa, rodada em curso) é exibido como `INDISPONIVEL`.
+
+Prioridade na fila (FR-016): `INDETERMINADO`, `DIVERGENTE`, `SEM_EVIDENCIA` e `INDISPONIVEL` antes
+de `CONVERGENTE`, depois por código. A resposta herda o pior estado entre seus critérios.
 
 ## revisao
 
@@ -170,24 +183,27 @@ Uma abertura de uma resposta por uma docente.
 |---|---|---|
 | docente, resposta | FK | |
 | participacao | FK Participacao, nulo | preenchido quando a correção faz parte de um estudo |
-| condicao | `COM_APOIO` \| `SEM_APOIO` | fora de estudo é sempre `COM_APOIO` |
-| rodada | FK Rodada, nulo | rodada cujas sugestões foram exibidas, nulo em `SEM_APOIO` |
+| condicao | `COM_APOIO` \| `SEM_APOIO` | fora de estudo é sempre `COM_APOIO`; no estudo, imposta pela alocação |
+| rodada | FK Rodada, nulo | rodada cujas sugestões foram exibidas (a de referência do lote, ou a fixada no estudo); nula em `SEM_APOIO` |
 | aberta_em | instante | |
-| tempo_ativo_ms | int | acumulado informado pelo frontend na última decisão (R11) |
+| tempo_ativo_ms | int | acumulado na **última decisão**: é a métrica (R11). Sessão sem decisão fica com 0 e não entra na conta |
+| tempo_total_ms | int | último valor da batida periódica (a cada 30 s). Diagnóstico, não é métrica |
 
 ### Decisao
 | Campo | Tipo | Regra |
 |---|---|---|
-| sessao | FK SessaoCorrecao | resposta, docente e condição vêm da sessão |
-| criterio | FK Criterio | |
+| sessao | FK SessaoCorrecao | a condição vem da sessão |
+| resposta, docente, participacao | FK (participacao nula fora de estudo) | copiados da sessão para a restrição de vigência |
+| criterio | FK Criterio | deve pertencer à versão da rubrica do lote |
 | nivel | FK Nivel | valor decidido, deve pertencer ao critério |
-| estado_exibido | `CONVERGENTE` \| `DIVERGENTE` \| `SEM_EVIDENCIA` \| `INDETERMINADO` \| `OCULTO` | foto do que a docente viu |
+| estado_exibido | `CONVERGENTE` \| `DIVERGENTE` \| `SEM_EVIDENCIA` \| `INDETERMINADO` \| `INDISPONIVEL` \| `OCULTO` | foto do que a docente viu |
 | nivel_sugerido | FK Nivel, nulo | foto da sugestão exibida (só se convergente) |
 | tipo | `CONFIRMACAO` \| `ALTERACAO` \| `ESCOLHA` \| `CEGA` | derivado: igual à sugestão / diferente / sem sugestão exibida / condição sem apoio |
 | motivo | texto, opcional | |
 | tempo_ativo_ms | int | acumulado da sessão no momento da decisão |
 | substitui | FK Decisao, nulo | histórico (FR-017, cenário 3) |
-| vigente | bool | exatamente uma vigente por (resposta, critério, docente, participacao) |
+| vigente | bool | exatamente uma vigente por (resposta, critério, docente, participacao): restrição única parcial com `nulls_distinct=False`, para valer também fora de estudo |
+| criado_em | instante | |
 
 Resposta **finalizada** = todos os critérios da versão com decisão vigente daquela docente. Só
 respostas finalizadas entram na exportação de notas (FR-019).
@@ -206,18 +222,22 @@ daquela resposta.
 | lote, rodada | FK | rodada cujas sugestões serão exibidas, precisa estar `CONCLUIDA` |
 | semente_alocacao | int | |
 | status | `PREPARACAO` → `EM_ANDAMENTO` → `ENCERRADO` | alocação das metades feita ao iniciar |
+| iniciado_em | instante, nulo | |
+
+Regras de criação: só PESQUISADOR, o lote precisa ser dele e a rodada precisa estar
+`CONCLUIDA`. Só respostas elegíveis (sem aviso: nem vazias, nem longas) entram no estudo.
 
 ### AlocacaoResposta
-Única por `(estudo, resposta)`. `metade`: `A` \| `B`, estratificada pela proporção de
-divergentes (R12).
+Única por `(estudo, resposta)`. `metade`: `A` \| `B`, estratificada por "a resposta tem ao menos
+um critério não convergente na rodada do estudo" (R12). Equilíbrio de ±1 no total e por estrato.
 
 ### Participacao
 | Campo | Tipo | Regra |
 |---|---|---|
 | estudo, docente | FK | única por par |
-| posicao | int | ordem de aceite do convite |
-| braco | `1` (A sem apoio, B com apoio) \| `2` (A com apoio, B sem apoio) | rodízio pela posição |
-| ordem | `SEM_PRIMEIRO` \| `COM_PRIMEIRO` | rodízio pela posição |
+| posicao | int | ordem do convite, única por estudo |
+| braco | `1` (A sem apoio, B com apoio) \| `2` (A com apoio, B sem apoio), nulo até iniciar | rodízio pela posição |
+| ordem | `SEM_PRIMEIRO` \| `COM_PRIMEIRO`, vazio até iniciar | rodízio pela posição |
 | concluida_em | instante, nulo | |
 
 Condição de uma resposta para um participante = função de (`metade`, `braco`). O servidor usa

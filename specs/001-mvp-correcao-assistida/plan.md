@@ -30,16 +30,18 @@ krippendorff. Frontend: React 18, react-router 7, Vite 6
 
 **Storage**: PostgreSQL 16 (sem pgvector). Redis só como broker do Celery
 
-**Testing**: pytest + pytest-django (unit / integration / contract), com o dublê `dumb`
-roteirizado no lugar do modelo. Vitest para funções do frontend (cronômetro de tempo ativo,
-destaque de trechos). ruff
+**Testing**: pytest + pytest-django + pytest-xdist (unit / integration / contract, 8 processos),
+com o dublê `dumb` roteirizado no lugar do modelo. Vitest para funções do frontend (cronômetro de
+tempo ativo, destaque de trechos). Playwright (Python) para os e2e por história contra o stack.
+ruff. Estado em 2026-09-18: 176 testes no backend (cobertura 92%; módulos puros de 96% a 100%),
+9 no frontend e 6 e2e
 
 **Target Platform**: servidor Linux com Docker Compose. Navegador desktop recente
 
 **Project Type**: aplicação web (API + SPA + worker)
 
 **Performance Goals**: rodada de 800 chamadas em ≤ 30 min (≥ 0,45 chamada/s, concorrência 8).
-Fila e tela de resposta em < 1 s para lote de até 200 respostas
+Medido no V7: 1,6 chamada/s. Fila e tela de resposta em < 1 s para lote de até 200 respostas
 
 **Constraints**: nenhum identificador de estudante persistido; só nível pago do Gemini para dado
 real; teto de custo por rodada; texto nunca truncado; pré-avaliação oculta no servidor na
@@ -87,38 +89,40 @@ specs/001-mvp-correcao-assistida/
 
 ### Source Code (repository root)
 
+Estado real em 2026-09-18:
+
 ```text
 backend/
 ├── src/
 │   ├── config/           # settings (12-factor), urls, celery.py
-│   ├── core/             # Usuario, papéis, convites (token Django), permissões
-│   ├── conectores/       # llm.py: factory + DubleLLMProvider + GeminiLLMProvider; precos.py
-│   ├── rubricas/         # Rubrica, VersaoRubrica, Criterio, Nivel; congelamento; modelo JSON
-│   ├── lotes/            # Lote, Resposta; importacao.py (leitura em memória), anonimizacao.py
+│   ├── core/             # Usuario, autenticacao (JWT, definir-senha), permissions, exceptions, logs
+│   ├── conectores/       # llm.py (interface/factory), gemini.py, duble.py, precos.py, catalogo.py
+│   ├── rubricas/         # modelos, services (versão/congelamento/hash), modelo.py (JSON), carregar_exemplo
+│   ├── lotes/            # Lote, Resposta; importacao.py, anonimizacao.py, auditoria.py (+ comando)
 │   ├── avaliacao/        # Rodada, Execucao, Trecho, Consolidado
-│   │   ├── prompts/avaliar_criterio_v1.md
-│   │   ├── ancora.py         # verificação de trechos (R5), puro
-│   │   ├── consolidacao.py   # estados (R6), puro
-│   │   ├── estimativa.py     # custo (R7)
-│   │   └── tasks.py          # executar_avaliacao (Celery, retry, teto)
-│   ├── revisao/          # SessaoCorrecao, Decisao; fila; notas.csv
-│   ├── estudos/          # Estudo, Participacao, AlocacaoResposta; alocacao.py (R12)
-│   └── metricas/         # calculos.py (funções puras, R10); painel; exportacao.py
-├── tests/
-│   ├── unit/             # ancora, consolidacao, anonimizacao, alocacao, calculos
-│   ├── integration/      # rodada ponta a ponta com dublê; teto; retomada; ocultação
-│   └── contract/         # respostas da API conforme contracts/api.md
-└── requirements.txt / requirements-dev.txt
-frontend/
-├── src/
-│   ├── pages/            # Rubricas, Lote, Importacao, Rodada, Fila, Resposta, Painel, Estudo
-│   ├── components/       # TextoComDestaques, CartaoCriterio, Distribuicao, Cronometro
-│   └── services/         # api.ts, tempoAtivo.ts
-└── tests/
-analysis/
-└── reproduzir_metricas.py   # independente do backend: lê o ZIP e recalcula (SC-006)
-dados_sinteticos/            # turma fictícia + identificadores plantados + roteiros do dublê
-docker-compose.yml           # db (postgres:16), redis, backend, worker, frontend
+│   │   ├── prompts/avaliar_criterio_v1.md, avaliar_criterio_v2.md (vigente)
+│   │   ├── prompt.py, ancora.py, validacao.py, sementes.py, consolidacao.py   # puros
+│   │   ├── estimativa.py, sugestao.py, services.py, tasks.py (executar_execucao)
+│   │   └── management/commands/recalcular_consolidados.py
+│   ├── revisao/          # SessaoCorrecao, Decisao; fila.py, services.py, notas.csv
+│   ├── estudos/          # Estudo, AlocacaoResposta, Participacao; alocacao.py (puro), services.py
+│   └── metricas/         # calculos.py (puro), painel.py, estudo.py, exportacao.py
+├── tests/{unit,integration,contract}/ + conftest.py, fabricas.py
+├── requirements.txt / requirements-dev.txt / pyproject.toml (ruff, pytest -n 8)
+└── Dockerfile
+frontend/src/
+├── pages/            # Login, DefinirSenha, Rubricas, RubricaEditor, Lotes, LoteNovo, Lote,
+│                     # Importacao, Rodada, Fila, Resposta, RespostaInspecao, Painel,
+│                     # Estudos, EstudoDetalhe, Participacao
+├── components/       # PainelDeCorrecao, CartaoCriterio, Distribuicao, TextoComDestaques,
+│                     # destaques.ts (+ teste), graficos/{BarrasAgrupadas,BarrasEmpilhadas,Dica}
+└── services/         # api.ts, auth.tsx, tipos.ts, useCarregar.ts, tempoAtivo.ts (+ teste)
+analysis/reproduzir_metricas.py   # independente do backend: lê o ZIP e recalcula (SC-006)
+e2e/                              # Playwright por história + V7 com modelo real (ver e2e/README.md)
+dados_sinteticos/                 # gerador da turma fictícia + identificadores plantados
+docs/                             # manual da docente, rascunho do parecer, modelos/ de rubrica
+specs/001-mvp-correcao-assistida/piloto/   # script do piloto de variabilidade (R3)
+docker-compose.yml                # db, redis, backend, worker, frontend (portas 55433/6380/8810/5183)
 .env.example
 ```
 
@@ -130,6 +134,24 @@ verificador independente das métricas.
 
 ## Desvios registrados na implementação
 
+Resumo do que mudou em relação ao desenho acima e às descrições das tarefas. Os documentos da
+feature (spec, data-model, contratos, research, quickstart) já refletem o estado real.
+
+- **Escolha do modelo por lote**: catálogo `GET /modelos/` (dublê e, com chave, os Gemini) e
+  `provedor_llm`/`modelo_llm` escolhidos ao criar o lote.
+- **Modelo local descartado** pelo orientador. Um adaptador Ollama chegou a ser escrito e foi
+  removido (T089).
+- **Prompt v2 e robustez do Gemini** depois do V7 real: ausência de conteúdo vira sem evidência,
+  teto de 8.192 tokens de saída e timeout de 60 s. A rodada guarda a versão do prompt (R7).
+- **Nova tentativa manual na tarefa** (`self.retry` com espera exponencial), em vez de
+  `autoretry_for`, com laço síncrono nos testes; recuperação de execução abandonada e
+  `visibility_timeout` de 10 min (R8).
+- **Rotas além do desenho original**: `GET /lotes/`, `GET /lotes/{id}/rodadas/`,
+  `GET /respostas/{id}/execucoes/` e `/sugestoes/`, `GET /modelos/`, `GET /estudos/`,
+  `GET /estudos/{id}/`, `/criterios/`, `/encerrar/` e `POST /auth/definir-senha/`
+  ([api.md](contracts/api.md)).
+- **Estudo**: só respostas elegíveis, participantes na ordem do convite, ordem das respostas
+  embaralhada por participante (R12).
 - **allauth dispensado** (2026-09-18, fase de implementação): no Extenda ele serve para
   autocadastro, verificação de e-mail e login social, e nada disso existe aqui (FR-026: contas só
   por convite ou admin). O login usa simplejwt com e-mail. O convite de estudo usa

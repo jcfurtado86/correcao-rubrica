@@ -33,6 +33,7 @@ services:
       - ./backend:/app
       - ./dados_sinteticos:/dados_sinteticos
       - ./analysis:/analysis
+      - ./docs:/docs
     ports:
       - "8810:8000"
     depends_on:
