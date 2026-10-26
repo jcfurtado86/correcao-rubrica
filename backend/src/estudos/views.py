@@ -7,15 +7,23 @@ from rest_framework.views import APIView
 from core.exceptions import ErroDeNegocio
 from core.permissions import EhPesquisador
 from estudos.models import Estudo
-from estudos.serializers import ConvitesEntrada, EstudoEntrada
+from estudos.serializers import (
+    ConsentimentoEntrada,
+    ConvitesEntrada,
+    EstudoEntrada,
+    QuestionarioEntrada,
+)
 from estudos.services import (
     abrir_sessao_do_estudo,
     convidar,
     criar_estudo,
     encerrar,
+    enviar_questionario,
     iniciar,
+    link_do_participante,
     minha_tarefa,
     participacao_de,
+    registrar_consentimento,
 )
 from lotes.models import Resposta
 from metricas.estudo import arquivos_do_estudo, painel_do_estudo
@@ -86,6 +94,13 @@ class ConvitesView(APIView):
         return Response({"convites": convites}, status=status.HTTP_201_CREATED)
 
 
+class LinkDeSenhaView(APIView):
+    permission_classes = [EhPesquisador]
+
+    def post(self, request, pk, posicao):
+        return Response(link_do_participante(estudo_do_pesquisador(request, pk), posicao))
+
+
 class IniciarView(APIView):
     permission_classes = [EhPesquisador]
 
@@ -105,6 +120,32 @@ class MinhaTarefaView(APIView):
     def get(self, request, pk):
         estudo = get_object_or_404(Estudo, pk=pk)
         return Response(minha_tarefa(participacao_de(estudo, request.user)))
+
+
+class ConsentimentoView(APIView):
+    """TCLE (Instrumento 2): aceite com confirmação, antes do primeiro bloco."""
+
+    def post(self, request, pk):
+        participacao = participacao_de(get_object_or_404(Estudo, pk=pk), request.user)
+        entrada = ConsentimentoEntrada(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        registrar_consentimento(participacao, entrada.validated_data["autoriza_imagem"])
+        return Response({"consentimento": True})
+
+
+class QuestionarioView(APIView):
+    """Instrumentos 4 e 5, respondidos pelo participante no fim do estudo."""
+
+    def get(self, request, pk):
+        participacao = participacao_de(get_object_or_404(Estudo, pk=pk), request.user)
+        return Response({"enviado": hasattr(participacao, "questionario")})
+
+    def post(self, request, pk):
+        participacao = participacao_de(get_object_or_404(Estudo, pk=pk), request.user)
+        entrada = QuestionarioEntrada(data=request.data)
+        entrada.is_valid(raise_exception=True)
+        enviar_questionario(participacao, entrada.validated_data)
+        return Response({"enviado": True}, status=status.HTTP_201_CREATED)
 
 
 class SessaoDoEstudoView(APIView):

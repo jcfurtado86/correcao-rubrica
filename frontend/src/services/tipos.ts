@@ -244,7 +244,12 @@ export type Tarefa = {
   bloco_atual: { numero: number; de: number; metade: string; condicao: Condicao } | null;
   proxima_resposta: { id: number; codigo: string } | null;
   progresso?: { bloco: number; condicao: Condicao; feitas: number; total: number }[];
+  participante?: string;
+  consentimento?: boolean;
+  questionario_enviado?: boolean;
 };
+export type MediaDp = { n: number; media: number | null; dp: number | null };
+export type ResumoQuestionarios = { respondidos: number; sus: MediaDp; apoio: (MediaDp & { item: number })[] };
 export type ResumoCondicao = Concordancia & {
   seletiva: BlocoPainel["seletiva"];
 };
@@ -264,6 +269,11 @@ export type PainelEstudo = {
   participantes: {
     participante: string;
     email?: string;
+    posicao?: number;
+    senha_definida?: boolean;
+    consentimento: boolean;
+    autoriza_imagem: boolean | null;
+    questionario: boolean;
     braco: number | null;
     ordem: string;
     progresso: { bloco: number; condicao: Condicao; feitas: number; total: number }[];
@@ -271,5 +281,6 @@ export type PainelEstudo = {
     mediana_sem_apoio_ms: number | null;
     mediana_com_apoio_ms: number | null;
   }[];
+  questionarios: ResumoQuestionarios;
 };
 export const ROTULO_CONDICAO: Record<Condicao, string> = { SEM_APOIO: "sem apoio", COM_APOIO: "com apoio" };

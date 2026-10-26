@@ -5,6 +5,7 @@ import json
 import zipfile
 
 import pytest
+from django.utils import timezone
 
 from avaliacao.services import criar_rodada
 from core.models import Usuario
@@ -30,7 +31,7 @@ def estudo(pesquisador, cliente, django_capture_on_commit_callbacks):
     return {"api": api, "id": r.json()["id"], "lote": lote, "rodada": rodada}
 
 
-def _convidar_e_iniciar(estudo, n=8):
+def _convidar_e_iniciar(estudo, n=8, consentir=True):
     emails = [f"prof{i}@exemplo.org" for i in range(n)]
     r = estudo["api"].post(
         f"/api/estudos/{estudo['id']}/convites/", {"emails": emails}, format="json"
@@ -38,6 +39,8 @@ def _convidar_e_iniciar(estudo, n=8):
     assert r.status_code == 201, r.content
     r = estudo["api"].post(f"/api/estudos/{estudo['id']}/iniciar/")
     assert r.status_code == 200, r.content
+    if consentir:  # a maioria dos testes não é sobre o TCLE
+        Participacao.objects.filter(estudo_id=estudo["id"]).update(consentimento_em=timezone.now())
     return emails, r.json()
 
 
@@ -105,10 +108,19 @@ def test_iniciar_aloca_metades_e_celulas(estudo):
         (2, "COM_PRIMEIRO"),
     ]:
         assert celulas.count(celula) == 2
+    # quem chega depois do início entra na próxima célula do rodízio (posição 9 → célula 1)
     r = estudo["api"].post(
         f"/api/estudos/{estudo['id']}/convites/", {"emails": ["tarde@exemplo.org"]}, format="json"
     )
-    assert r.status_code == 400 and r.json()["codigo"] == "estudo_iniciado"
+    assert r.status_code == 201, r.content
+    assert r.json()["convites"][0]["posicao"] == 9 and r.json()["convites"][0]["link"]
+    tarde = Participacao.objects.get(estudo_id=estudo["id"], docente__email="tarde@exemplo.org")
+    assert (tarde.braco, tarde.ordem) == (1, "SEM_PRIMEIRO")
+    r = estudo["api"].post(f"/api/estudos/{estudo['id']}/encerrar/")
+    r = estudo["api"].post(
+        f"/api/estudos/{estudo['id']}/convites/", {"emails": ["depois@exemplo.org"]}, format="json"
+    )
+    assert r.status_code == 400 and r.json()["codigo"] == "estudo_encerrado"
 
 
 def test_sem_apoio_nao_devolve_nada_da_pre_avaliacao(estudo, cliente):
@@ -241,9 +253,126 @@ def test_painel_e_exportacao_do_estudo(estudo, cliente):
         nomes = set(z.namelist())
         assert {"alocacao.csv", "decisoes.csv", "sessoes.csv", "metricas_estudo.json"} <= nomes
         alocacao = z.read("alocacao.csv").decode("utf-8")
-        assert alocacao.splitlines()[0] == "participante,braco,ordem"
+        assert alocacao.splitlines()[0] == (
+            "participante,braco,ordem,consentimento_em,autoriza_imagem"
+        )
         assert "P01" in alocacao and "@" not in alocacao
         decisoes = z.read("decisoes.csv").decode("utf-8")
         assert "P0" in decisoes and "@" not in decisoes
         respostas = z.read("respostas.csv").decode("utf-8").splitlines()
         assert any(linha.endswith(",A") or linha.endswith(",B") for linha in respostas[1:])
+
+
+def test_pesquisador_gera_link_de_senha_depois_de_iniciar(estudo, cliente):
+    emails, _ = _convidar_e_iniciar(estudo, n=4)
+    url = f"/api/estudos/{estudo['id']}/participantes/2/link-senha/"
+    r = estudo["api"].post(url)
+    assert r.status_code == 200, r.content
+    assert r.json()["email"] == emails[1] and "/definir-senha/" in r.json()["link"]
+    uid, token = r.json()["link"].rstrip("/").split("/")[-2:]
+    r = cliente().post(
+        "/api/auth/definir-senha/",
+        {"uid": uid, "token": token, "senha": "Senha#Forte2026"},
+        format="json",
+    )
+    assert r.status_code == 200
+    # senha esquecida: um novo link redefine a senha
+    r = estudo["api"].post(url)
+    uid, token = r.json()["link"].rstrip("/").split("/")[-2:]
+    r = cliente().post(
+        "/api/auth/definir-senha/",
+        {"uid": uid, "token": token, "senha": "Nova#Senha2026"},
+        format="json",
+    )
+    assert r.status_code == 200
+    assert Usuario.objects.get(email=emails[1]).check_password("Nova#Senha2026")
+    # o painel diz quem já tem senha
+    painel = estudo["api"].get(f"/api/estudos/{estudo['id']}/painel/").json()
+    senhas = {p["posicao"]: p["senha_definida"] for p in painel["participantes"]}
+    assert senhas[2] is True and senhas[1] is False
+    # participante não gera link de ninguém; posição inexistente dá 404
+    participante = cliente(Usuario.objects.get(email=emails[0]))
+    assert participante.post(url).status_code == 403
+    assert (
+        estudo["api"].post(f"/api/estudos/{estudo['id']}/participantes/99/link-senha/").status_code
+        == 404
+    )
+
+
+QUESTIONARIO = {
+    "nivel": "GRADUACAO_POS",
+    "tempo_docencia": "DE_5_A_15",
+    "uso_ia": "ALGUMAS",
+    "o_que_ajudou": "Os trechos destacados.",
+    "o_que_mudaria": "",
+    **{f"apoio_{i}": 4 for i in range(1, 6)},
+    # SUS: ímpares 5 e pares 1 dão o escore máximo, 100
+    **{f"sus_{i}": 5 if i % 2 else 1 for i in range(1, 11)},
+}
+
+
+def _concluir(api, estudo):
+    criterios = list(estudo["lote"].versao_rubrica.criterios.all())
+    while (tarefa := api.get(f"/api/estudos/{estudo['id']}/minha-tarefa/").json())[
+        "proxima_resposta"
+    ]:
+        rid = tarefa["proxima_resposta"]["id"]
+        sessao = api.post(f"/api/estudos/{estudo['id']}/respostas/{rid}/sessoes/").json()["sessao"]
+        for c in criterios:
+            api.post(
+                f"/api/sessoes/{sessao}/decisoes/",
+                {"criterio": c.id, "nivel": c.niveis.first().id, "tempo_ativo_ms": 1000},
+                format="json",
+            )
+
+
+def test_tcle_e_obrigatorio_antes_de_corrigir(estudo, cliente):
+    emails, _ = _convidar_e_iniciar(estudo, n=2, consentir=False)
+    api = cliente(Usuario.objects.get(email=emails[0]))
+    base = f"/api/estudos/{estudo['id']}"
+    tarefa = api.get(f"{base}/minha-tarefa/").json()
+    assert tarefa["consentimento"] is False and tarefa["participante"] == "P01"
+    rid = tarefa["proxima_resposta"]["id"]
+    r = api.post(f"{base}/respostas/{rid}/sessoes/")
+    assert r.status_code == 400 and r.json()["codigo"] == "sem_consentimento"
+    r = api.post(
+        f"{base}/consentimento/", {"aceito": False, "autoriza_imagem": True}, format="json"
+    )
+    assert r.status_code == 400
+    r = api.post(
+        f"{base}/consentimento/", {"aceito": True, "autoriza_imagem": False}, format="json"
+    )
+    assert r.status_code == 200
+    assert api.get(f"{base}/minha-tarefa/").json()["consentimento"] is True
+    assert api.post(f"{base}/respostas/{rid}/sessoes/").status_code == 201
+    participacao = Participacao.objects.get(estudo_id=estudo["id"], docente__email=emails[0])
+    assert participacao.consentimento_em is not None and participacao.autoriza_imagem is False
+
+
+def test_questionario_so_no_fim_uma_vez_e_resumo_no_painel(estudo, cliente):
+    emails, _ = _convidar_e_iniciar(estudo, n=2)
+    api = cliente(Usuario.objects.get(email=emails[0]))
+    url = f"/api/estudos/{estudo['id']}/questionario/"
+    r = api.post(url, QUESTIONARIO, format="json")
+    assert r.status_code == 400 and r.json()["codigo"] == "estudo_nao_concluido"
+    _concluir(api, estudo)
+    assert api.post(url, {**QUESTIONARIO, "sus_1": 6}, format="json").status_code == 400
+    assert api.post(url, QUESTIONARIO, format="json").status_code == 201
+    assert api.get(url).json() == {"enviado": True}
+    r = api.post(url, QUESTIONARIO, format="json")
+    assert r.status_code == 400 and r.json()["codigo"] == "questionario_enviado"
+    tarefa = api.get(f"/api/estudos/{estudo['id']}/minha-tarefa/").json()
+    assert tarefa["questionario_enviado"] is True
+    painel = estudo["api"].get(f"/api/estudos/{estudo['id']}/painel/").json()
+    resumo = painel["questionarios"]
+    assert resumo["respondidos"] == 1 and resumo["sus"]["media"] == 100.0
+    assert resumo["apoio"][0] == {"item": 1, "n": 1, "media": 4.0, "dp": None}
+    assert [p["questionario"] for p in painel["participantes"]] == [True, False]
+    r = estudo["api"].get(f"/api/estudos/{estudo['id']}/exportacao.zip")
+    with zipfile.ZipFile(
+        io.BytesIO(b"".join(r.streaming_content) if r.streaming else r.content)
+    ) as z:
+        linhas = z.read("questionarios.csv").decode().splitlines()
+        alocacao = z.read("alocacao.csv").decode().splitlines()
+    assert linhas[1].startswith("P01,GRADUACAO_POS") and ",100.0," in linhas[1]
+    assert "consentimento_em" in alocacao[0] and "prof0" not in "".join(linhas)

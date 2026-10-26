@@ -48,6 +48,7 @@ a { color: var(--primaria); }
 .topo {
   display: flex; gap: 1.5rem; align-items: center; padding: 0.75rem 1.5rem;
   background: var(--superficie); border-bottom: 1px solid var(--borda);
+  flex-wrap: wrap; row-gap: 0.5rem;
 }
 .topo nav { display: flex; gap: 1rem; flex: 1; }
 .topo nav a { text-decoration: none; color: var(--suave); }
@@ -65,6 +66,9 @@ input, select, textarea {
   background: var(--superficie); color: var(--texto);
 }
 textarea { min-height: 4rem; resize: vertical; }
+/* Campos dentro de rótulos/células ocupam a largura do contêiner (number tem largura mínima intrínseca e vazava). */
+label > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea),
+td > :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) { width: 100%; min-width: 0; }
 button {
   font: inherit; padding: 0.45rem 0.9rem; border-radius: 6px; border: 1px solid var(--borda);
   background: var(--superficie); color: var(--texto); cursor: pointer;
@@ -80,6 +84,7 @@ button.selecionado { outline: 2px solid var(--primaria); font-weight: 600; }
 .alerta { color: var(--alerta); }
 .centro { text-align: center; padding: 2rem; }
 .linha { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+.linha > label { min-width: 0; }
 .grade { display: grid; gap: 1rem; }
 .duas-colunas { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 1.25rem; align-items: start; }
 @media (max-width: 900px) { .duas-colunas { grid-template-columns: 1fr; } }
@@ -166,3 +171,9 @@ details summary { cursor: pointer; }
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12); white-space: nowrap;
 }
 .dica strong { font-size: 0.95rem; }
+/* fieldset tem min-width: min-content por padrão; em telas estreitas a tabela de níveis rola dentro do cartão. */
+fieldset { min-width: 0; }
+fieldset.cartao { overflow-x: auto; }
+/* Questionários do estudo (escala de 1 a 5) */
+table.likert td:not(:first-child), table.likert th:not(:first-child) { text-align: center; width: 2.75rem; }
+table.likert input[type="radio"] { width: 1.1rem; height: 1.1rem; cursor: pointer; }

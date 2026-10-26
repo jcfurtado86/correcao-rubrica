@@ -1,3 +1,4 @@
+import { API } from "../services/api";
 import { useState, type FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -15,7 +16,7 @@ export default function DefinirSenha() {
       setErro("As senhas não conferem.");
       return;
     }
-    const r = await fetch("/api/auth/definir-senha/", {
+    const r = await fetch(`${API}/auth/definir-senha/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ uid, token, senha }),

@@ -1,5 +1,7 @@
 import { Navigate, NavLink, Outlet, Route, Routes } from "react-router-dom";
 import { useSessao } from "./services/auth";
+import type { EstudoResumo } from "./services/tipos";
+import { useCarregar } from "./services/useCarregar";
 import DefinirSenha from "./pages/DefinirSenha";
 import EstudoDetalhe from "./pages/EstudoDetalhe";
 import Estudos from "./pages/Estudos";
@@ -17,8 +19,28 @@ import RubricaEditor from "./pages/RubricaEditor";
 import Rubricas from "./pages/Rubricas";
 import Rodada from "./pages/Rodada";
 
+// Docente convidado para um estudo ainda aberto: a ferramenta mostra só o estudo,
+// para que o participante não se perca em Rubricas e Lotes durante a oficina.
+function estudosAtivos(estudos: EstudoResumo[] | null) {
+  return (estudos ?? []).filter((e) => e.papel === "PARTICIPANTE" && e.status !== "ENCERRADO");
+}
+
+function Inicio() {
+  const { usuario } = useSessao();
+  const pesquisador = usuario?.papel === "PESQUISADOR";
+  const { dados: estudos, erro } = useCarregar<EstudoResumo[]>(pesquisador ? null : "/estudos/");
+  if (pesquisador || erro) return <Navigate to="/lotes" replace />;
+  if (!estudos) return <p className="centro suave">Carregando…</p>;
+  const ativos = estudosAtivos(estudos);
+  if (ativos.length === 1) return <Navigate to={`/estudos/${ativos[0].id}/participar`} replace />;
+  return <Navigate to={ativos.length > 1 ? "/estudos" : "/lotes"} replace />;
+}
+
 function Protegido() {
   const { usuario, carregando, logout } = useSessao();
+  const pesquisador = usuario?.papel === "PESQUISADOR";
+  const { dados: estudos } = useCarregar<EstudoResumo[]>(usuario && !pesquisador ? "/estudos/" : null);
+  const soEstudo = !pesquisador && estudosAtivos(estudos).length > 0;
   if (carregando) return <p className="centro suave">Carregando…</p>;
   if (!usuario) return <Navigate to="/entrar" replace />;
   return (
@@ -26,8 +48,8 @@ function Protegido() {
       <header className="topo">
         <strong>Correção Assistida por Rubrica</strong>
         <nav>
-          <NavLink to="/rubricas">Rubricas</NavLink>
-          <NavLink to="/lotes">Lotes</NavLink>
+          {!soEstudo && <NavLink to="/rubricas">Rubricas</NavLink>}
+          {!soEstudo && <NavLink to="/lotes">Lotes</NavLink>}
           <NavLink to="/estudos">Estudos</NavLink>
         </nav>
         <span className="suave">
@@ -47,7 +69,7 @@ export default function App() {
       <Route path="/entrar" element={<Login />} />
       <Route path="/definir-senha/:uid/:token" element={<DefinirSenha />} />
       <Route element={<Protegido />}>
-        <Route path="/" element={<Navigate to="/lotes" replace />} />
+        <Route path="/" element={<Inicio />} />
         <Route path="/rubricas" element={<Rubricas />} />
         <Route path="/rubricas/nova" element={<RubricaEditor />} />
         <Route path="/rubricas/:id" element={<RubricaEditor />} />

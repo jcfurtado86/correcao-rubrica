@@ -1,6 +1,8 @@
 import { useCallback } from "react";
 import { useParams } from "react-router-dom";
 import PainelDeCorrecao from "../components/PainelDeCorrecao";
+import Questionario from "../estudo/Questionario";
+import Termo from "../estudo/Termo";
 import { chamar } from "../services/api";
 import { ROTULO_CONDICAO, type Criterio, type EstudoResumo, type Sessao, type Tarefa } from "../services/tipos";
 import { useCarregar } from "../services/useCarregar";
@@ -18,11 +20,17 @@ export default function Participacao() {
 
   if (!estudo || !tarefa) return <p className="suave">Carregando…</p>;
   if (!tarefa.iniciado) return <p className="suave">O estudo “{estudo.titulo}” ainda não começou. Volte quando o pesquisador iniciar.</p>;
+  if (!tarefa.consentimento) {
+    const nRespostas = (tarefa.progresso ?? []).reduce((soma, b) => soma + b.total, 0);
+    return <Termo estudoId={id!} nRespostas={nRespostas} aoAceitar={recarregar} />;
+  }
+  if (tarefa.concluido && !tarefa.questionario_enviado)
+    return <Questionario estudoId={id!} participante={tarefa.participante} aoEnviar={recarregar} />;
   if (tarefa.concluido)
     return (
       <div className="cartao">
         <h1>Obrigado!</h1>
-        <p>Você concluiu as duas etapas do estudo “{estudo.titulo}”.</p>
+        <p>Você concluiu o estudo “{estudo.titulo}” e o questionário. Pode avisar a equipe.</p>
       </div>
     );
   const bloco = tarefa.bloco_atual!;

@@ -1,6 +1,9 @@
 // Cliente da API: JWT no cabeçalho, renovação automática e erro no formato
 // {detail, codigo} de contracts/api.md.
 
+// Prefixo da API: "/api" na raiz ou "<base>/api" quando publicado em subcaminho (VITE_BASE).
+export const API = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
+
 const CHAVE_ACESSO = "cr.acesso";
 const CHAVE_RENOVACAO = "cr.renovacao";
 
@@ -41,7 +44,7 @@ export function temSessao(): boolean {
 async function renovar(): Promise<boolean> {
   const renovacao = ler(CHAVE_RENOVACAO);
   if (!renovacao) return false;
-  const r = await fetch("/api/auth/token/refresh/", {
+  const r = await fetch(`${API}/auth/token/refresh/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ refresh: renovacao }),
@@ -67,7 +70,7 @@ export async function chamar<T = unknown>(caminho: string, opcoes: Opcoes = {}, 
     cabecalhos["Content-Type"] = "application/json";
     corpo = JSON.stringify(opcoes.corpo);
   }
-  const resposta = await fetch(`/api${caminho}`, {
+  const resposta = await fetch(`${API}${caminho}`, {
     method: opcoes.metodo ?? (corpo ? "POST" : "GET"),
     headers: cabecalhos,
     body: corpo,
@@ -106,7 +109,7 @@ export function salvarBlob(blob: Blob, nomeArquivo: string) {
 }
 
 export async function entrar(email: string, senha: string) {
-  const r = await fetch("/api/auth/token/", {
+  const r = await fetch(`${API}/auth/token/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password: senha }),

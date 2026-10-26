@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { baixar, chamar, ErroApi } from "../services/api";
+import { ITENS_APOIO } from "../estudo/instrumentos";
 import { ROTULO_CONDICAO, type EstudoResumo, type PainelEstudo } from "../services/tipos";
 import { useCarregar } from "../services/useCarregar";
 
@@ -17,16 +18,36 @@ export default function EstudoDetalhe() {
   const { dados: estudo, recarregar } = useCarregar<EstudoResumo>(`/estudos/${id}/`);
   const { dados: painel, recarregar: recarregarPainel } = useCarregar<PainelEstudo>(`/estudos/${id}/painel/`);
   const [emails, setEmails] = useState("");
-  const [convites, setConvites] = useState<Convite[]>([]);
   const [alocacao, setAlocacao] = useState<Alocacao | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [links, setLinks] = useState<Record<number, string>>({});
+  const [copiado, setCopiado] = useState<number | null>(null);
+
+  async function gerarLink(posicao: number) {
+    setErro(null);
+    try {
+      const r = await chamar<{ link: string }>(`/estudos/${id}/participantes/${posicao}/link-senha/`, { metodo: "POST" });
+      setLinks((atual) => ({ ...atual, [posicao]: r.link }));
+    } catch (e) {
+      setErro(e instanceof ErroApi ? e.message : "Falha ao gerar o link.");
+    }
+  }
+
+  async function copiar(posicao: number) {
+    try {
+      await navigator.clipboard.writeText(links[posicao]);
+      setCopiado(posicao);
+    } catch {
+      setErro("Não foi possível copiar. Selecione o link e copie manualmente.");
+    }
+  }
 
   async function convidar() {
     setErro(null);
     try {
       const lista = emails.split(/[\s,;]+/).filter(Boolean);
       const r = await chamar<{ convites: Convite[] }>(`/estudos/${id}/convites/`, { corpo: { emails: lista } });
-      setConvites(r.convites);
+      setLinks((atual) => ({ ...atual, ...Object.fromEntries(r.convites.filter((c) => c.link).map((c) => [c.posicao, c.link!])) }));
       setEmails("");
       recarregar();
       recarregarPainel();
@@ -59,34 +80,13 @@ export default function EstudoDetalhe() {
       </p>
 
       {estudo.status === "PREPARACAO" && (
-        <div className="cartao grade">
-          <h3 style={{ margin: 0 }}>Convidar docentes</h3>
-          <textarea
-            placeholder="e-mails separados por vírgula ou linha"
-            value={emails}
-            onChange={(e) => setEmails(e.target.value)}
-            aria-label="E-mails dos participantes"
-          />
-          <div className="linha">
-            <button onClick={convidar} disabled={!emails.trim()}>
-              Convidar
-            </button>
-            <button className="primario" onClick={iniciar} disabled={estudo.n_participantes === 0}>
-              Iniciar estudo (aloca metades e braços)
-            </button>
-          </div>
-          {convites.length > 0 && (
-            <table>
-              <tbody>
-                {convites.map((c) => (
-                  <tr key={c.email}>
-                    <td>{c.email}</td>
-                    <td>{c.link ? <input readOnly value={c.link} onFocus={(e) => e.target.select()} style={{ width: "100%" }} /> : <span className="suave">já tem senha</span>}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+        <div className="cartao linha" style={{ justifyContent: "space-between" }}>
+          <span className="suave">
+            Convide os docentes na tabela de participantes e inicie o estudo. Quem for convidado depois do início entra no próximo grupo do rodízio.
+          </span>
+          <button className="primario" onClick={iniciar} disabled={estudo.n_participantes === 0}>
+            Iniciar estudo (aloca metades e braços)
+          </button>
         </div>
       )}
 
@@ -131,16 +131,25 @@ export default function EstudoDetalhe() {
               </div>
             </div>
           </div>
-          <div className="cartao" style={{ overflowX: "auto" }}>
-            <h3 style={{ marginTop: 0 }}>Participantes</h3>
+        </>
+      )}
+
+      {painel && (
+        <div className="cartao" style={{ overflowX: "auto" }}>
+          <h3 style={{ marginTop: 0 }}>Participantes</h3>
+          {painel.participantes.length === 0 && <p className="suave">Nenhum docente convidado ainda.</p>}
+          {painel.participantes.length > 0 && (
             <table>
               <thead>
                 <tr>
                   <th>Participante</th>
                   <th>E-mail</th>
+                  <th>Acesso</th>
                   <th>Braço</th>
                   <th>Ordem</th>
                   <th>Progresso</th>
+                  <th>TCLE</th>
+                  <th>Questionário</th>
                   <th className="num">Mediana sem apoio</th>
                   <th className="num">Mediana com apoio</th>
                 </tr>
@@ -150,19 +159,67 @@ export default function EstudoDetalhe() {
                   <tr key={p.participante}>
                     <td>{p.participante}</td>
                     <td className="suave">{p.email}</td>
+                    <td style={{ minWidth: "14rem" }}>
+                      {p.posicao !== undefined && links[p.posicao] ? (
+                        <div className="linha" style={{ flexWrap: "nowrap" }}>
+                          <input readOnly value={links[p.posicao]} onFocus={(e) => e.target.select()} aria-label={`Link de senha de ${p.participante}`} />
+                          <button onClick={() => copiar(p.posicao!)}>{copiado === p.posicao ? "Copiado" : "Copiar"}</button>
+                        </div>
+                      ) : (
+                        <span className="linha" style={{ gap: "0.5rem" }}>
+                          <span className="suave">{p.senha_definida ? "senha definida" : "sem senha"}</span>
+                          {p.posicao !== undefined && (
+                            <button className="link" onClick={() => gerarLink(p.posicao!)}>
+                              {p.senha_definida ? "novo link de senha" : "gerar link"}
+                            </button>
+                          )}
+                        </span>
+                      )}
+                    </td>
                     <td>{p.braco ?? "—"}</td>
                     <td>{p.ordem === "SEM_PRIMEIRO" ? "sem apoio primeiro" : p.ordem === "COM_PRIMEIRO" ? "com apoio primeiro" : "—"}</td>
                     <td>
-                      {p.progresso.map((b) => `${ROTULO_CONDICAO[b.condicao]} ${b.feitas}/${b.total}`).join(" · ")}
+                      {p.progresso.map((b) => `${ROTULO_CONDICAO[b.condicao]} ${b.feitas}/${b.total}`).join(" · ") || "—"}
                       {p.concluida && <span className="ok"> ✓</span>}
                     </td>
+                    <td>
+                      {p.consentimento ? <span className="ok">aceito</span> : <span className="suave">pendente</span>}
+                      {p.consentimento && <span className="suave"> · imagem {p.autoriza_imagem ? "sim" : "não"}</span>}
+                    </td>
+                    <td>{p.questionario ? <span className="ok">respondido</span> : <span className="suave">—</span>}</td>
                     <td className="num">{seg(p.mediana_sem_apoio_ms)}</td>
                     <td className="num">{seg(p.mediana_com_apoio_ms)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          )}
+          {estudo.status !== "ENCERRADO" && (
+            <div className="linha" style={{ marginTop: "1rem", alignItems: "flex-end" }}>
+              <label style={{ flex: 1 }}>
+                Adicionar docentes
+                <input
+                  placeholder="e-mails separados por vírgula"
+                  value={emails}
+                  onChange={(e) => setEmails(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && emails.trim() && convidar()}
+                  aria-label="E-mails dos participantes"
+                />
+              </label>
+              <button onClick={convidar} disabled={!emails.trim()}>
+                Convidar
+              </button>
+            </div>
+          )}
+          <p className="suave" style={{ marginBottom: 0, fontSize: "0.85rem" }}>
+            Ao convidar, o link de senha do docente aparece na linha dele. Envie por WhatsApp ou mostre na tela; ele vale uma vez e expira em 3 dias.
+            Gerar um link novo não muda a senha atual.
+          </p>
+        </div>
+      )}
+
+      {painel && estudo.status !== "PREPARACAO" && (
+        <>
           <div className="cartao" style={{ overflowX: "auto" }}>
             <h3 style={{ marginTop: 0 }}>Concordância por condição</h3>
             <table>
@@ -196,6 +253,37 @@ export default function EstudoDetalhe() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="cartao" style={{ overflowX: "auto" }}>
+            <h3 style={{ marginTop: 0 }}>Questionários (Instrumentos 4 e 5)</h3>
+            <p style={{ marginTop: 0 }}>
+              {painel.questionarios.respondidos} de {painel.participantes.length} respondidos · SUS médio{" "}
+              <strong>{painel.questionarios.sus.media === null ? "—" : dec(painel.questionarios.sus.media)}</strong>
+              {painel.questionarios.sus.dp !== null && <span className="suave"> (DP {dec(painel.questionarios.sus.dp)})</span>}
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Afirmação sobre o apoio (1 a 5)</th>
+                  <th className="num">Média</th>
+                  <th className="num">DP</th>
+                </tr>
+              </thead>
+              <tbody>
+                {painel.questionarios.apoio.map((a) => (
+                  <tr key={a.item}>
+                    <td>
+                      {a.item}. {ITENS_APOIO[a.item - 1]}
+                    </td>
+                    <td className="num">{dec(a.media)}</td>
+                    <td className="num">{dec(a.dp)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="suave" style={{ marginBottom: 0, fontSize: "0.85rem" }}>
+              As respostas abertas (B6 e B7) e os itens do SUS, por participante, estão em questionarios.csv no ZIP de exportação.
+            </p>
           </div>
         </>
       )}

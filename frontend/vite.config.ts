@@ -5,6 +5,8 @@ import { defineConfig } from "vite";
 const apiProxyTarget = process.env.VITE_API_PROXY_TARGET ?? "http://localhost:8810";
 
 export default defineConfig({
+  // Subcaminho de publicação (ex.: "/rubrica/"); vazio = raiz, como no desenvolvimento.
+  base: process.env.VITE_BASE ?? "/",
   plugins: [react()],
   server: {
     host: true,

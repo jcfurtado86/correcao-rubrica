@@ -14,8 +14,15 @@ from django.utils.http import urlsafe_base64_encode
 from avaliacao.models import Consolidado, Rodada
 from core.exceptions import ErroDeNegocio
 from core.models import Usuario
-from estudos.alocacao import alocar_participantes, blocos, condicao, dividir_metades, ordem_do_bloco
-from estudos.models import AlocacaoResposta, Estudo, Participacao
+from estudos.alocacao import (
+    CELULAS,
+    alocar_participantes,
+    blocos,
+    condicao,
+    dividir_metades,
+    ordem_do_bloco,
+)
+from estudos.models import AlocacaoResposta, Estudo, Participacao, Questionario
 from revisao.models import Decisao
 from revisao.services import abrir_sessao
 
@@ -44,12 +51,29 @@ def link_de_senha(usuario) -> str:
     return f"{settings.FRONTEND_URL}/definir-senha/{uid}/{token}/"
 
 
+def link_do_participante(estudo: Estudo, posicao: int) -> dict:
+    """Novo link de definição de senha para um participante, em qualquer fase do estudo.
+
+    Serve para entregar o acesso sem e-mail (oficina) e para senha esquecida ou link expirado.
+    Gerar um link não altera a senha atual: ela só muda quando o link é usado.
+    """
+    participacao = estudo.participacoes.select_related("docente").filter(posicao=posicao).first()
+    if participacao is None:
+        raise ErroDeNegocio(
+            "Participante não encontrado.", codigo="nao_encontrado", status_code=404
+        )
+    return {"email": participacao.docente.email, "link": link_de_senha(participacao.docente)}
+
+
 @transaction.atomic
 def convidar(estudo: Estudo, emails: list[str]) -> list[dict]:
-    if estudo.status != Estudo.Status.PREPARACAO:
+    if estudo.status == Estudo.Status.ENCERRADO:
         raise ErroDeNegocio(
-            "O estudo já começou; não entram novos participantes.", codigo="estudo_iniciado"
+            "O estudo foi encerrado; não entram novos participantes.", codigo="estudo_encerrado"
         )
+    # Com o estudo em andamento, quem entra depois recebe a próxima célula do rodízio,
+    # a mesma que teria recebido se tivesse sido convidado antes do início.
+    em_andamento = estudo.status == Estudo.Status.EM_ANDAMENTO
     proxima = (estudo.participacoes.aggregate(m=Max("posicao"))["m"] or 0) + 1
     convites = []
     for email in dict.fromkeys(e.strip().lower() for e in emails if e and e.strip()):
@@ -64,6 +88,9 @@ def convidar(estudo: Estudo, emails: list[str]) -> list[dict]:
             estudo=estudo, docente=usuario, defaults={"posicao": proxima}
         )
         if criada:
+            if em_andamento:
+                participacao.braco, participacao.ordem = CELULAS[(proxima - 1) % len(CELULAS)]
+                participacao.save(update_fields=["braco", "ordem"])
             proxima += 1
         link = link_de_senha(usuario) if not usuario.has_usable_password() else None
         if link:
@@ -196,6 +223,9 @@ def minha_tarefa(participacao: Participacao) -> dict:
     return {
         "iniciado": True,
         "concluido": concluido,
+        "participante": codigo_do_participante(participacao),
+        "consentimento": participacao.consentimento_em is not None,
+        "questionario_enviado": Questionario.objects.filter(participacao=participacao).exists(),
         "bloco_atual": atual,
         "proxima_resposta": {"id": proxima, "codigo": codigo} if proxima else None,
         "progresso": progresso,
@@ -206,6 +236,10 @@ def abrir_sessao_do_estudo(participacao: Participacao, resposta):
     """A condição vem da alocação, nunca do cliente (FR-025)."""
     if participacao.estudo.status != Estudo.Status.EM_ANDAMENTO:
         raise ErroDeNegocio("O estudo não está em andamento.", codigo="estudo_fechado")
+    if participacao.consentimento_em is None:
+        raise ErroDeNegocio(
+            "Aceite o termo de consentimento antes de começar.", codigo="sem_consentimento"
+        )
     cond = condicao_da_resposta(participacao, resposta.id)
     return abrir_sessao(
         participacao.docente,
@@ -214,3 +248,28 @@ def abrir_sessao_do_estudo(participacao: Participacao, resposta):
         participacao=participacao,
         rodada=participacao.estudo.rodada,
     )
+
+
+def codigo_do_participante(participacao: Participacao) -> str:
+    anteriores = participacao.estudo.participacoes.filter(posicao__lte=participacao.posicao)
+    return f"P{anteriores.count():02d}"
+
+
+def enviar_questionario(participacao: Participacao, dados: dict) -> Questionario:
+    """Instrumentos 4 e 5: uma única resposta, só depois dos dois blocos."""
+    if not minha_tarefa(participacao)["concluido"]:
+        raise ErroDeNegocio(
+            "Conclua os dois blocos antes de responder ao questionário.",
+            codigo="estudo_nao_concluido",
+        )
+    if Questionario.objects.filter(participacao=participacao).exists():
+        raise ErroDeNegocio("O questionário já foi enviado.", codigo="questionario_enviado")
+    return Questionario.objects.create(participacao=participacao, **dados)
+
+
+def registrar_consentimento(participacao: Participacao, autoriza_imagem: bool) -> None:
+    """TCLE aceito uma vez; a autorização de imagem pode ser revista depois."""
+    if participacao.consentimento_em is None:
+        participacao.consentimento_em = timezone.now()
+    participacao.autoriza_imagem = autoriza_imagem
+    participacao.save(update_fields=["consentimento_em", "autoriza_imagem"])

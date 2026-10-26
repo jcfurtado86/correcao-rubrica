@@ -1,0 +1,60 @@
+# Produção (VM do serde.info, publicado em https://serde.info/rubrica).
+# O nginx do host serve o frontend compilado e os estáticos do Django em /var/www/rubrica
+# e encaminha /rubrica/api/ e /rubrica/admin/ para o backend em 127.0.0.1:8810.
+# Segredos ficam em .env.prod (não versionado). Ver docs/deploy.md.
+name: correcao-rubrica
+
+services:
+  db:
+    image: postgres:16
+    env_file: .env.prod
+    environment:
+      POSTGRES_DB: correcao
+      POSTGRES_USER: correcao
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U correcao -d correcao"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    env_file: .env.prod
+    working_dir: /app/src
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 2 --timeout 120"
+    volumes:
+      - /var/www/rubrica/static:/app/src/staticfiles
+      - ./docs:/docs:ro
+    ports:
+      - "127.0.0.1:8810:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    env_file: .env.prod
+    working_dir: /app/src
+    command: sh -c "celery -A config worker -l info -c $${LLM_CONCORRENCIA:-4}"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  pgdata:

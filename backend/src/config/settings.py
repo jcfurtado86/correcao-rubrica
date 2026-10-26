@@ -101,7 +101,10 @@ TIME_ZONE = "America/Belem"
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+# Publicação em subcaminho (ex.: FORCE_SCRIPT_NAME=/rubrica): o nginx remove o prefixo e o Django o
+# recoloca nas URLs que gera (admin, redirecionamentos, estáticos).
+FORCE_SCRIPT_NAME = env("FORCE_SCRIPT_NAME", default=None)
+STATIC_URL = env("STATIC_URL", default="static/")
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

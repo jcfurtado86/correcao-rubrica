@@ -83,7 +83,7 @@ def painel_do_estudo(estudo, incluir_emails=True) -> dict:
     from estudos.services import minha_tarefa
 
     participantes = []
-    for p in estudo.participacoes.select_related("docente").order_by("posicao"):
+    for p in estudo.participacoes.select_related("docente", "questionario").order_by("posicao"):
         tarefa = minha_tarefa(p) if estudo.status != "PREPARACAO" else {"progresso": []}
         item = {
             "participante": nomes[p.id],
@@ -91,11 +91,16 @@ def painel_do_estudo(estudo, incluir_emails=True) -> dict:
             "ordem": p.ordem,
             "progresso": tarefa.get("progresso", []),
             "concluida": p.concluida_em is not None,
+            "consentimento": p.consentimento_em is not None,
+            "autoriza_imagem": p.autoriza_imagem,
+            "questionario": hasattr(p, "questionario"),
             "mediana_sem_apoio_ms": c.mediana(por_participante[p.id]["SEM_APOIO"]),
             "mediana_com_apoio_ms": c.mediana(por_participante[p.id]["COM_APOIO"]),
         }
         if incluir_emails:
             item["email"] = p.docente.email
+            item["posicao"] = p.posicao
+            item["senha_definida"] = p.docente.has_usable_password()
         participantes.append(item)
 
     return {
@@ -118,6 +123,30 @@ def painel_do_estudo(estudo, incluir_emails=True) -> dict:
         }
         | {"diferenca_pareada_mediana_ms": c.mediana(diferencas), "n_pareados": len(diferencas)},
         "participantes": participantes,
+        "questionarios": resumo_questionarios(estudo),
+    }
+
+
+def _media_dp(valores: list[float]) -> dict:
+    import statistics
+
+    return {
+        "n": len(valores),
+        "media": statistics.fmean(valores) if valores else None,
+        "dp": statistics.stdev(valores) if len(valores) > 1 else None,
+    }
+
+
+def resumo_questionarios(estudo) -> dict:
+    from estudos.models import Questionario
+
+    qs = list(Questionario.objects.filter(participacao__estudo=estudo))
+    return {
+        "respondidos": len(qs),
+        "sus": _media_dp([q.sus_escore for q in qs]),
+        "apoio": [
+            {"item": i, **_media_dp([getattr(q, f"apoio_{i}") for q in qs])} for i in range(1, 6)
+        ],
     }
 
 
@@ -143,10 +172,12 @@ def arquivos_do_estudo(estudo, incluir_texto=False, incluir_motivos=False) -> di
     )
     saida = io.StringIO()
     escritor = csv.writer(saida, lineterminator="\n")
-    escritor.writerow(["participante", "braco", "ordem"])
+    escritor.writerow(["participante", "braco", "ordem", "consentimento_em", "autoriza_imagem"])
     for p in estudo.participacoes.order_by("posicao"):
-        escritor.writerow([nomes[p.id], p.braco or "", p.ordem])
+        imagem = "" if p.autoriza_imagem is None else ("sim" if p.autoriza_imagem else "nao")
+        escritor.writerow([nomes[p.id], p.braco or "", p.ordem, p.consentimento_em or "", imagem])
     arquivos["alocacao.csv"] = saida.getvalue()
+    arquivos["questionarios.csv"] = _questionarios_csv(estudo, nomes)
     arquivos["metricas_estudo.json"] = json.dumps(
         painel_do_estudo(estudo, incluir_emails=False),
         ensure_ascii=False,
@@ -154,3 +185,32 @@ def arquivos_do_estudo(estudo, incluir_texto=False, incluir_motivos=False) -> di
         cls=DjangoJSONEncoder,
     )
     return arquivos
+
+
+def _questionarios_csv(estudo, nomes: dict[int, str]) -> str:
+    import csv
+    import io
+
+    from estudos.models import Questionario
+
+    colunas = (
+        ["nivel", "tempo_docencia", "uso_ia"]
+        + [f"apoio_{i}" for i in range(1, 6)]
+        + ["o_que_ajudou", "o_que_mudaria"]
+        + [f"sus_{i}" for i in range(1, 11)]
+    )
+    saida = io.StringIO()
+    escritor = csv.writer(saida, lineterminator="\n")
+    escritor.writerow(["participante", *colunas, "sus_escore", "enviado_em"])
+    for q in Questionario.objects.filter(participacao__estudo=estudo).order_by(
+        "participacao__posicao"
+    ):
+        escritor.writerow(
+            [
+                nomes[q.participacao_id],
+                *(getattr(q, c) for c in colunas),
+                q.sus_escore,
+                q.enviado_em,
+            ]
+        )
+    return saida.getvalue()
